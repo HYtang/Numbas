@@ -1,0 +1,11 @@
+{{#with question}}
+<div class="question" id="question-{{number}}">
+	<div class="statement">
+		{{{textile statement}}}
+	</div>
+
+	{{#each parts}}
+		{{path}}
+	{{/each}}
+</div>
+{{/with}}

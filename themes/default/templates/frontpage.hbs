@@ -1,0 +1,33 @@
+{{#with exam}}
+	<table>
+		<tr>
+			<td>Exam Name:</td>
+			<td class="rtd">{{name}}</td>
+		</tr>
+		<tr>
+			<td>Number of Questions:</td>
+			<td class="rtd">{{numQuestions}}</td>
+		</tr>
+		{{#if showFrontPage}}
+		<tr>
+			<td>Marks Available:</td>
+			<td class="rtd">{{marks}}</td>
+		</tr>
+		{{/if}}
+		{{#if percentPass}}
+		<tr>
+			<td>Pass Percentage:</td>
+			<td class="rtd">{{percentPass}}</td>
+		</tr>
+		{{/if}}
+		{{#if duration}}
+		<tr>
+			<td>Time Allowed:</td>
+			<td class="rtd">{{displayDuration}}</td>
+		</tr>
+		{{/if}}
+	</table>
+	<div class="startBtn">
+		<input id="startBtn" class="btn" type="button" value="Start"/>
+	</div>
+{{/with}}

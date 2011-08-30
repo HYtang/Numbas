@@ -22,6 +22,7 @@ import shutil
 from optparse import OptionParser
 import examparser
 from exam import Exam
+import json
 from xml2js import xml2js
 from zipfile import ZipFile
 
@@ -119,6 +120,8 @@ def makeExam(options):
 		try:
 			exam = Exam.fromstring(data)
 			examXML = exam.tostring()
+			obj = exam.export()
+			print(json.dumps(obj,sort_keys=True,indent=4))
 			options.resources = exam.resources
 			options.extensions = exam.extensions
 		except examparser.ParseError as err:

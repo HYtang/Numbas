@@ -254,6 +254,40 @@ class Exam:
 
 		return root
 
+	#return a simplified object suitable for putting into JSON/.exam format
+	def export(self):
+		obj = {
+			'name': self.name,
+			'percentPass': self.percentPass,
+			'shuffleQuestions': self.shuffleQuestions,
+			'settings': {
+				'navigation': {
+					'reverse': self.navigation['reverse'],
+					'browse': self.navigation['browse'],
+					'showfrontpage': self.navigation['showfrontpage'],
+					'onadvance': self.navigation['onadvance'].export(),
+					'onreverse': self.navigation['onreverse'].export(),
+					'onmove': self.navigation['onmove'].export()
+				},
+				'timing': {
+					'duration': self.duration,
+					'timeout': self.timing['timeout'].export(),
+					'timedwarning': self.timing['timedwarning'].export()
+				},
+				'feedback': {
+					'showactualmark': self.showactualmark,
+					'showtotalmark': self.showtotalmark,
+					'showanswerstate': self.showanswerstate,
+					'allowrevealanswer': self.allowrevealanswer
+				},
+				'rulesets': { name: [rule.export() if isinstance(rule,SimplificationRule) else rule for rule in rules] for name,rules in self.rulesets.items() }
+			},
+			'functions': { function.name: function.export() for function in self.functions },
+			'variables': { variable.name: variable.definition for variable in self.variables },
+			'questions': [ q.export() for q in self.questions ]
+		}
+		return obj
+
 	def tostring(self):
 		try:
 			xml = self.toxml()
@@ -287,6 +321,13 @@ class SimplificationRule:
 			conditions.append(etree.fromstring('<condition>'+condition+'</condition>'))
 
 		return rule
+	
+	def export(self):
+		return {
+			'pattern': self.pattern,
+			'result': self.result,
+			'conditions': self.conditions
+		}
 
 
 class Event:
@@ -304,6 +345,12 @@ class Event:
 		event.attrib = {'type':self.kind, 'action': self.action}
 		event.append(makeContentNode(self.message))
 		return event
+	
+	def export(self):
+		return {
+			'action': self.action,
+			'message': self.message
+		}
 
 class Question:
 	name = 'Untitled Question'
@@ -368,6 +415,16 @@ class Question:
 
 		return question
 
+	def export(self):
+		return {
+			'name': self.name,
+			'statement': self.statement,
+			'advice': self.advice,
+			'parts': [part.export() for part in self.parts],
+			'variables': { variable.name: variable.definition for variable in self.variables },
+			'functions': { function.name: function.export() for function in self.functions }
+		}
+
 class Variable:
 	name = ''
 	definition = ''
@@ -414,6 +471,13 @@ class Function:
 			parameters.append(parameter)
 
 		return function
+
+	def export(self):
+		return {
+			'type': self.type,
+			'definition': self.definition,
+			'parameters': self.parameters
+		}
 
 class Part:
 	prompt = ''
@@ -469,6 +533,16 @@ class Part:
 			steps.append(step.toxml())
 
 		return part
+
+	def export(self):
+		return {
+			'type': self.kind,
+			'marks': self.marks,
+			'stepspenalty': self.stepsPenalty,
+			'enableminimummarks': self.enableMinimumMarks,
+			'minimummarks': self.minimumMarks
+		}
+
 
 class JMEPart(Part):
 	kind = 'jme'
@@ -547,6 +621,30 @@ class JMEPart(Part):
 
 		return part
 
+	def export(self):
+		obj = super(JMEPart,self).export()
+		obj.update({
+			'answer': {
+				'correctanswer': self.answer,
+				'simplification': self.answerSimplification,
+				'checking': {
+					'type': self.checkingType,
+					'accuracy': self.checkingAccuracy,
+					'failurerate': self.failureRate,
+					'range': {
+						'start': self.vsetRangeStart,
+						'end': self.vsetRangeEnd,
+						'points': self.vsetRangePoints
+					},
+					'maxlength': self.maxLength.export(),
+					'minlength': self.minLength.export(),
+					'musthave': self.mustHave.export(),
+					'notAllowed': self.notAllowed.export()
+				}
+			}
+		})
+		return obj
+
 class Restriction:
 	message = ''
 	length = -1
@@ -585,6 +683,19 @@ class Restriction:
 
 		return restriction
 
+	def export(self):
+		obj = {
+			'message': self.message,
+			'partialcredit': self.partialCredit
+		}
+
+		if self.length>=0:
+			obj['length']=self.length
+
+		if len(self.strings)>0:
+			obj['strings'] = self.strings
+
+		return obj
 
 class PatternMatchPart(Part):
 	kind = 'patternmatch'
@@ -614,6 +725,16 @@ class PatternMatchPart(Part):
 		part.find('case').attrib = {'sensitive': str(self.caseSensitive), 'partialcredit': str(self.partialCredit)+'%'}
 
 		return part
+
+	def export(self):
+		obj = super(PatternMatchPart,self).export()
+		obj.update({
+			'displayanswer': self.displayAnswer,
+			'correctanswer': self.answer,
+			'casesensitive': self.caseSensitive,
+			'partialcredit': self.partialCredit
+		})
+		return obj
 
 class NumberEntryPart(Part):
 	kind = 'numberentry'
@@ -651,6 +772,19 @@ class NumberEntryPart(Part):
 		answer.find('allowonlyintegeranswers').attrib = {'value': str(self.integerAnswer), 'partialcredit': str(self.partialCredit)+'%'}
 
 		return part
+
+	def export(self):
+		obj = super(NumberEntryPart,self).export()
+		obj.update({
+			'answer': {
+				'minvalue': self.minvalue,
+				'maxvalue': self.maxvalue,
+				'inputstep': self.inputStep,
+				'integeranswer': self.integerAnswer,
+				'partialcredit': self.partialCredit
+			}
+		})
+		return obj
 
 class MultipleChoicePart(Part):
 	minMarksEnabled = False
@@ -734,6 +868,23 @@ class MultipleChoicePart(Part):
 
 		return part
 
+	def export(self):
+		obj = super(MultipleChoicePart,self).export()
+		obj.update({
+			'minmarks': self.minMarks,
+			'maxmarks': self.maxMarks,
+			'minanswers': self.minAnswers,
+			'maxanswers': self.maxAnswers,
+			'shufflechoices': self.shuffleChoices,
+			'shuffleanswers': self.shuffleAnswers,
+			'displaytype': self.displayType,
+			'displaycolumns': self.displayColumns,
+			'choices': self.choices,
+			'answers': self.answers,
+			'matrix': self.matrix
+		})
+		return obj
+
 class InformationPart(Part):
 	kind = 'information'
 
@@ -780,6 +931,13 @@ class GapFillPart(Part):
 			gaps.append(gap.toxml())
 
 		return part
+
+	def export(self):
+		obj = super(GapFillPart,self).export()
+		obj.update({
+			'gaps': [gap.export() for gap in self.gaps]
+		})
+		return obj
 
 if __name__ == '__main__':
 	if len(sys.argv)>1:

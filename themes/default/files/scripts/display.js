@@ -29,6 +29,8 @@ var display = Numbas.display = {
 	//display code to be called before anything else has happened
 	init: function()
 	{
+		document.title = Numbas.exam.name;
+
 		//hide the various content-display bits
 		$('.mainDisplay > *').hide();
 		//show the page;

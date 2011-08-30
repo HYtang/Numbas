@@ -18,11 +18,18 @@ import sys
 
 def encode(xml):
 	xml = re.sub('\n|\r','',xml)
-	xml = re.sub('\\\\','\\\\\\\\',xml)
+	xml = re.sub('\\\\',r'\\\\',xml)
 	xml = re.sub('"','\\"',xml)
 	return xml
 
+def encodeHandlebars(hbs):
+	hbs = re.sub('\n',r'\\n',hbs)
+	hbs = re.sub('"',r'\"',hbs)
+	return hbs
+
 def xml2js(options):
+
+#include XSLT
 	themedir = os.path.join(options.theme,'xslt')
 
 	all = ''
@@ -33,6 +40,16 @@ def xml2js(options):
 		s = x[:-5]+': \"'+encode(open(os.path.join(themedir,x),encoding='utf-8').read())+'\"'
 		all+=s
 
+#include handlebars templates
+	themedir = os.path.join(options.theme,'templates')
+
+	allHBS = []
+	files = filter(lambda x: x[-4:]=='.hbs', os.listdir(themedir))
+	for x in files:
+		s = x[:-4]+': \"'+encodeHandlebars(open(os.path.join(themedir,x),encoding='utf-8').read())+'\"'
+		allHBS.append(s)
+
+#include javascript files to go with extensions
 	extensionfiles = ['extensions/'+x+'/'+x+'.js'for x in [os.path.split(y)[1] for y in options.extensions]]
 
 	out = """Numbas.queueScript('settings.js',%s,function() {
@@ -41,11 +58,15 @@ Numbas.rawxml = {
 		%s
 	},
 
+	handlebars: {
+		%s
+	},
+
 	examXML: \"%s\"
 };
 	
 });
-""" % (str(extensionfiles),all, encode(options.examXML))
+""" % (str(extensionfiles),all, ',\n\t\t'.join(allHBS), encode(options.examXML))
 	return out
 
 if __name__ == '__main__':
