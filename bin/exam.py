@@ -104,7 +104,7 @@ class Exam:
 	showanswerstate = True			#show right/wrong on questions?
 	allowrevealanswer = True		#allow student to reveal answer to question?
 	adviceType = 'onreveal'			#when is advice shown? 'onreveal' only option at the moment
-	adviceGlobalThreshold = 0		#reveal advice if student scores less than this percentage
+	adviceThreshold = 0		#reveal advice if student scores less than this percentage
 
 	def __init__(self,name='Untitled Exam'):
 		self.name = name
@@ -165,7 +165,7 @@ class Exam:
 			if 'advice' in data['feedback']:
 				advice = data['feedback']['advice']
 				tryLoad(advice,'type',exam,'adviceType')
-				tryLoad(advice,'threshold',exam,'adviceGlobalThreshold')
+				tryLoad(advice,'threshold',exam,'adviceThreshold')
 
 		if 'rulesets' in data:
 			rulesets = data['rulesets']
@@ -240,7 +240,7 @@ class Exam:
 				'showanswerstate': str(self.showanswerstate),
 				'allowrevealanswer': str(self.allowrevealanswer)
 		}
-		feedback.find('advice').attrib = {'type':self.adviceType, 'threshold': str(self.adviceGlobalThreshold)}
+		feedback.find('advice').attrib = {'type':self.adviceType, 'threshold': str(self.adviceThreshold)}
 
 		rules = settings.find('rulesets')
 		for name in self.rulesets.keys():
@@ -272,25 +272,29 @@ class Exam:
 			'name': self.name,
 			'percentPass': self.percentPass,
 			'shuffleQuestions': self.shuffleQuestions,
+			'duration': self.duration,
 			'settings': {
 				'navigation': {
 					'reverse': self.navigation['reverse'],
 					'browse': self.navigation['browse'],
-					'showfrontpage': self.navigation['showfrontpage'],
-					'onadvance': self.navigation['onadvance'].export(),
-					'onreverse': self.navigation['onreverse'].export(),
-					'onmove': self.navigation['onmove'].export()
+					'showFrontPage': self.navigation['showfrontpage'],
+					'events': {
+						'advance': self.navigation['onadvance'].export(),
+						'reverse': self.navigation['onreverse'].export(),
+						'move': self.navigation['onmove'].export()
+					}
 				},
 				'timing': {
-					'duration': self.duration,
 					'timeout': self.timing['timeout'].export(),
 					'timedwarning': self.timing['timedwarning'].export()
 				},
 				'feedback': {
-					'showactualmark': self.showactualmark,
-					'showtotalmark': self.showtotalmark,
-					'showanswerstate': self.showanswerstate,
-					'allowrevealanswer': self.allowrevealanswer
+					'showActualMark': self.showactualmark,
+					'showTotalMark': self.showtotalmark,
+					'showAnswerState': self.showanswerstate,
+					'allowRevealAnswer': self.allowrevealanswer,
+					'adviceType': self.adviceType,
+					'adviceThreshold': self.adviceThreshold
 				},
 				'rulesets': { name: [rule.export() if isinstance(rule,SimplificationRule) else rule for rule in rules] for name,rules in self.rulesets.items() }
 			},

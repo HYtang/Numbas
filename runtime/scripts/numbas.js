@@ -75,6 +75,8 @@ function init()
 
 	job(Numbas.storage.startLMS);			//Initialise the LMS. In a bit, the LMS will tell us if there is a previous attempt that can be resumed
 
+	job(Numbas.display.loadTemplates);
+
 	job(Numbas.xml.loadXMLDocs);				//load in all the XML and XSLT files
 
 	job(function()
@@ -89,7 +91,7 @@ function init()
 			job(exam.init,exam);
 			job(Numbas.display.init);
 			job(function() {
-				if(exam.showFrontPage)
+				if(exam.navigation.showFrontPage)
 				{
 					exam.display.showInfoPage('frontpage');
 				}

@@ -15,66 +15,69 @@ Copyright 2011 Newcastle University
 */
 
 
-Numbas.queueScript('scripts/exam.js',['timing','util','xml','display','schedule','scorm-storage','pretendlms','math','question','jme-variables','jme-display'],function() {
+Numbas.queueScript('scripts/exam.js',['json','timing','util','xml','display','schedule','scorm-storage','pretendlms','math','question','jme-variables','jme-display'],function() {
 
 
 // exam object keeps track of all info we need to know while exam is running
 var Exam = Numbas.Exam = function()
 {
 	var parseBool = Numbas.util.parseBool;
-	var tryGetAttribute = Numbas.xml.tryGetAttribute;
 
-	//get the exam info out of the XML and into the exam object
-	var xml = this.xml = Numbas.xml.examXML.selectSingleNode('/exam');
-	if(!xml)
-	{
-		throw(new Error("Root element of exam XML should be 'exam'"));
-	}
+	this.xml = Numbas.xml.loadXML(Numbas.rawxml.examXML).selectSingleNode('exam');
 
-	//load settings from XML
-	tryGetAttribute(this,'.',['name','percentPass','totalQuestions','allQuestions','selectQuestions','shuffleQuestions']);
+	var json = this.json = Numbas.raw.examJSON;
 
-	tryGetAttribute(this,'settings/navigation',['reverse','browse','showfrontpage'],['navigateReverse','navigateBrowse','showFrontPage']);
+	var exam = this;
+
+	var tryLoad = function(path,to){
+		to = to || exam;
+		return Numbas.json.tryLoad(path,to,json);
+	};
+
+	['name','duration','percentPass','allQuestions','selectQuestions','shuffleQuestions'].map(tryLoad());
+
+	this.navigation = Numbas.util.copyobj(this.navigation);
+	['reverse','browse','showFrontPage'].map(tryLoad('settings.navigation',this.navigation));
 
 	//get navigation events and actions
-	this.navigationEvents = {};
+	var navEvents = this.navigation.events = {};
 
-	var navigationEventNodes = xml.selectNodes('settings/navigation/event');
-	for( var i=0; i<navigationEventNodes.length; i++ )
+	['advance','reverse','move'].map(tryLoad('settings.navigation.events',navEvents));
+	for( var ev in navEvents )
 	{
-		var e = new ExamEvent(navigationEventNodes[i]);
-		this.navigationEvents[e.type] = e;
+		navEvents[ev] = new ExamEvent(navEvents[ev]);
 	}
 
-	tryGetAttribute(this,'settings/timing','duration');
-	
-	//get text representation of exam duration
-	this.displayDuration = this.duration>0 ? Numbas.timing.secsToDisplayTime( this.duration, true ) : '';
 						
 	//get timing events
-	this.timerEvents = {};
-	var timerEventNodes = this.xml.selectNodes('settings/timing/event');
-	for( i=0; i<timerEventNodes.length; i++ )
+	var timerEvents = this.timerEvents = {};
+	['timeout','timedwarning'].map(tryLoad('settings.timing',timerEvents));
+	for( var ev in timerEvents )
 	{
-		var e = new ExamEvent(timerEventNodes[i]);
-		this.timerEvents[e.type] = e;
+		timerEvents[ev] = new ExamEvent(timerEvents[ev]);
 	}
 		
 	//feedback
 	var feedbackPath = 'settings/feedback';
-	tryGetAttribute(this,feedbackPath,['showactualmark','showtotalmark','showanswerstate','allowrevealanswer'],['showActualMark','showTotalMark','showAnswerState','allowRevealAnswer']);
-
-	tryGetAttribute(this,feedbackPath+'/advice',['type','threshold'],['adviceType','adviceGlobalThreshold']);	
-
-	this.totalQuestions = xml.selectNodes('questions/question').length;
-
+	['showActualMark','showTotalMark','showAnswerState','allowRevealAnswer','adviceType','adviceThreshold'].map(tryLoad('settings.feedback'));
 
 	//rulesets
-	var rulesetNodes = xml.selectNodes('settings/rulesets/set');
 	this.rulesets = Numbas.util.copyobj(Numbas.jme.display.simplificationRules);
+	for(var name in json.settings.rulesets)
+	{
+		var set = json.settings.rulesets[name].map(function(r) {
+			if(typeof(r)=='string')
+				return r;
+			else
+				return new Numbas.jme.display.Rule(r.pattern,r.conditions,r.result);
+		});
+		
+		this.rulesets[name] = Numbas.jme.display.collectRuleset(set,this.rulesets);
+	}
 
-	var sets = {};
-	sets['default'] = ['unitFactor','unitPower','unitDenominator','zeroFactor','zeroTerm','zeroPower','collectNumbers','zeroBase','constantsFirst','sqrtProduct','sqrtDivision','sqrtSquare','otherNumbers'];
+	this.rulesets['default'] = Numbas.jme.display.collectRuleset(['unitFactor','unitPower','unitDenominator','zeroFactor','zeroTerm','zeroPower','collectNumbers','zeroBase','constantsFirst','sqrtProduct','sqrtDivision','sqrtSquare','otherNumbers'],this.rulesets);
+
+	/*
 	for( i=0; i<rulesetNodes.length; i++)
 	{
 		var name = rulesetNodes[i].getAttribute('name');
@@ -110,6 +113,12 @@ var Exam = Numbas.Exam = function()
 	{
 		this.rulesets[name] = Numbas.jme.display.collectRuleset(sets[name],this.rulesets);
 	}
+	*/
+
+	//get text representation of exam duration
+	this.displayDuration = this.duration>0 ? Numbas.timing.secsToDisplayTime( this.duration, true ) : '';
+
+	this.totalQuestions = json.questions.length;
 
 	//initialise display
 	this.display = new Numbas.display.ExamDisplay(this);
@@ -141,9 +150,6 @@ Exam.prototype = {
 	allQuestions: true,			//use all questions?
 	selectQuestions: 0,			//how many questions to select, if not using all?
 	shuffleQuestions: false,	//should the questions be shuffled?
-	sortingList: [],			//??
-	balancingRule: '',			//??
-	currentQuestionNumber: 0,	//number of current question
 	currentQuestion: undefined,	//current question object
 	
 	numQuestions: 0,			//number of questions in this sitting
@@ -151,14 +157,13 @@ Exam.prototype = {
 	questionList: [],			//Question objects, in order student will see them
 		
 	//navigation
-	navigateReverse: false,		//can student navigate to previous question?
-	navigateBrowse: false,		//can student jump to any question they like?
-	navigateBrowseType: '',		//dropbox or ??
-	onAdvanceAction: 'none',	//some options about what to do when student clicks 'next question' button
-	onReverseAction: 'none',	//same for 'previous question' button
-	onMoveAction: 'none',		//and for jumping to arbitrary question
+	navigation: {
+		showFrontPage: true,	//show the front page, or go straight to first question?
+		reverse: false,			//can student navigate to previous question?
+		browse: false,			//can student jump to any question they like?
+		events: {}
+	},
 
-	navigationEvents: {},		//checks to perform when doing certain navigation action
 	timerEvents: {},			//events based on timing
 	
 	//timing
@@ -437,13 +442,13 @@ Exam.prototype = {
 			//work out what action is happening
 			var event = '';
 			if(i==currentQuestion.number-1)		//reversing
-				event='onreverse';
+				event='reverse';
 			else if(i==currentQuestion.number+1)	//advancing
-				event='onadvance';
+				event='advance';
 			else								//jumping
-				event='onmove';
+				event='move';
 
-			var eventObj = this.navigationEvents[event];
+			var eventObj = this.navigation.events[event];
 			switch( eventObj.action )
 			{
 			case 'none':
@@ -531,14 +536,10 @@ Exam.prototype = {
 	}
 };
 
-function ExamEvent(eventNode)
+function ExamEvent(json)
 {
-	var tryGetAttribute = Numbas.xml.tryGetAttribute;
-	tryGetAttribute(this,eventNode,'type');
-	tryGetAttribute(this,'action','type','action',{xml: eventNode});
-	var messageNode = eventNode.selectSingleNode('action/warning/message');
-	if(messageNode)
-		this.message = Numbas.xml.serializeMessage(messageNode);
+	['type','action','message'].map(Numbas.json.tryLoad('',this,json));
+	this.message = textile(this.message);
 }
 ExamEvent.prototype = {
 	type: '',

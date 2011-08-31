@@ -63,7 +63,6 @@ Copyright 2011 Newcastle University
 	</xsl:choose>
 	<xsl:value-of select="count(preceding-sibling::part)" />
 </xsl:template>
-
 <xsl:template match="part">
 	<xsl:variable name="path">
 		<xsl:apply-templates select="." mode="path"/>

@@ -1,11 +1,8 @@
-{{#with question}}
 <div class="question" id="question-{{number}}">
 	<div class="statement">
-		{{{textile statement}}}
+		{{{statement}}}
 	</div>
-
-	{{#each parts}}
-		{{path}}
-	{{/each}}
+	{{#parts}}
+		{{{render this}}}
+	{{/parts}}
 </div>
-{{/with}}

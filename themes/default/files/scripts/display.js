@@ -20,7 +20,24 @@ Numbas.queueScript('scripts/display.js',['controls','math','xml','util','timing'
 
 	var util = Numbas.util;
 
+
 var display = Numbas.display = {
+	// compile handlebars templates and add helpers
+	loadTemplates: function() {
+		Handlebars.registerHelper('render',function(){
+			 return this.display.render();
+		});
+		Handlebars.registerHelper('textile',function(block,context){
+			return textile(block);
+		});
+
+		var templates = Numbas.templates = {};
+		for(var x in Numbas.raw.templates)
+		{
+			templates[x] = Handlebars.compile(Numbas.raw.templates[x]);
+			Handlebars.registerPartial(x,templates[x]);
+		}
+	},
 	// update progress bar when loading
 	showLoadProgress: function()
 	{
@@ -32,11 +49,6 @@ var display = Numbas.display = {
 	init: function()
 	{
 		document.title = Numbas.exam.name;
-
-		for(var x in Numbas.raw.templates)
-		{
-			Handlebars.registerHelper(x,Handlebars.compile(Numbas.raw.templates[x]));
-		}
 
 		//hide the various content-display bits
 		$('.mainDisplay > *').hide();
@@ -119,7 +131,7 @@ display.ExamDisplay = function(e)
 	$('*').find("#nextBtn").click( Numbas.controls.nextQuestion );
 	
 	//show 'previous' button if allowed
-	if( e.navigateReverse )
+	if( e.navigation.reverse )
 	{
 		$('*').find("#prevBtn").click( Numbas.controls.previousQuestion ).show();
 	}
@@ -206,7 +218,7 @@ display.ExamDisplay.prototype =
 		{
 			var question = exam.questionList[j];
 			$(question.display.questionSelector).attr('class',
-					(question.visited || exam.navigateBrowse ? 'questionSelector' : 'questionSelector-hidden')+(j==exam.currentQuestion.number ? ' qs-selected' : ''));
+					(question.visited || exam.navigation.browse ? 'questionSelector' : 'questionSelector-hidden')+(j==exam.currentQuestion.number ? ' qs-selected' : ''));
 		}
 
 		//scroll question list to centre on current question
@@ -241,15 +253,15 @@ display.ExamDisplay.prototype =
 		//scroll back to top of screen
 		scroll(0,0);
 
+		//the whole page was hidden at load, so user doesn't see all the nav elements briefly
+		$('body > *').show();
+		$('#loading').hide();
+
 		switch(page)
 		{
 		case "frontpage":
 
-			//the whole page was hidden at load, so user doesn't see all the nav elements briefly
-			$('body > *').show();
-			$('#loading').hide();
-
-			$('#infoDisplay').getTransform(Numbas.xml.templates.frontpage,exam.xmlize());
+			$('#infoDisplay').html(Numbas.templates.frontpage(Numbas.exam));
 
 			$('#startBtn').click( Numbas.controls.beginExam );
 			break;
@@ -327,6 +339,10 @@ display.QuestionDisplay.prototype =
 	q: undefined,					//reference back to the main question object
 	html: '',						//HTML for displaying question
 	questionSelector: '',			//jQuery selector for this question's menu entry
+
+	render: function() {
+		return Numbas.templates.question(this.q);
+	},
 
 	show: function()
 	{
@@ -533,6 +549,21 @@ display.PartDisplay.prototype =
 	answerContext: function()
 	{
 		return this.htmlContext().find('#answer-'+this.p.path);
+	},
+
+	//produce HTML representing this part
+	render: function()
+	{
+		var p = this.p;
+		var obj = {
+			path: p.path,
+			index: p.index || 'a',
+			isGap: (p.parentPart && p.parentPart.type=='gapfill'),
+			prompt: textile('*hi*!'),
+			p: p
+		};
+		Handlebars.registerPartial('answer',Numbas.templates[p.type]);
+		return Numbas.templates['part'](obj);
 	},
 
 	//called when part is displayed (basically when question is changed)
