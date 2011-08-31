@@ -1,0 +1,26 @@
+{{#if isGap}}
+<span class="part" id="{{path}}">
+{{else}}
+<div class="part" id="{{path}}">
+{{/if}}
+	<h4 class="partheader">{{index}}</h4>
+	<span id="prompt">{{{prompt}}}</span>
+	<span id="answer-{{path}}">{{> answer}}</span>
+	<span class="warningcontainer" id="warning-{{path}}">
+		<img src="resources/exclamation-red.png"/>
+		<span class="partwarning"></span>
+	</span>
+	{{#unless isGap}}
+	<div id="partFeedback">
+		<input class="btn" id="submitPart" value="Submit part" type="button"></input>
+		<div id="marks">
+			<span id="score"></span>
+			<span id="feedback"><img src="resources/cross.png"/></span>
+		</div>
+	</div>
+	{{/unless}}
+{{#if isGap}}
+</span>
+{{else}}
+</div>
+{{/if}}
