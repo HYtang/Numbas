@@ -31,6 +31,11 @@ var display = Numbas.display = {
 	{
 		document.title = Numbas.exam.name;
 
+		for(var x in Numbas.raw.templates)
+		{
+			Handlebars.registerHelper(x,Handlebars.compile(Numbas.raw.templates[x]));
+		}
+
 		//hide the various content-display bits
 		$('.mainDisplay > *').hide();
 		//show the page;
