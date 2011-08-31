@@ -18,6 +18,8 @@ Copyright 2011 Newcastle University
 
 Numbas.queueScript('scripts/display.js',['controls','math','xml','util','timing','jme','jme-display'],function() {
 
+	var util = Numbas.util;
+
 var display = Numbas.display = {
 	// update progress bar when loading
 	showLoadProgress: function()
@@ -246,7 +248,7 @@ display.ExamDisplay.prototype =
 			//the whole page was hidden at load, so user doesn't see all the nav elements briefly
 			$('body > *').show();
 			$('#loading').hide();
-			
+
 			$('#infoDisplay').getTransform(Numbas.xml.templates.frontpage,exam.xmlize());
 
 			$('#startBtn').click( Numbas.controls.beginExam );
@@ -545,7 +547,7 @@ display.PartDisplay.prototype =
 		}
 		else
 		{
-			c.find('#stepsBtn').click(function() {
+			c.find('#stepsBtn:last').click(function() {
 				p.showSteps();
 			});
 		}
@@ -562,11 +564,11 @@ display.PartDisplay.prototype =
 		//hide part submit button and score feedback if there's only one part
 		if(p.parentPart==null && p.question.parts.length==1)
 		{
-			c.find('#partFeedback').hide();
+			c.find('#partFeedback:last').hide();
 		}
 
 
-		c.find('#partFeedback #submitPart').click(function() {
+		c.find('#partFeedback:last #submitPart').click(function() {
 			p.display.removeWarnings();
 			p.submit();
 			if(!p.answered)
@@ -575,11 +577,6 @@ display.PartDisplay.prototype =
 				scrollTo(p.display.htmlContext().find('.warningcontainer:visible:first'));
 			}
 		});
-
-		for(var i=0;i<this.p.steps.length; i++)
-		{
-			this.p.steps[i].display.show();
-		}
 
 		this.showScore(this.p.answered);
 	},
@@ -603,6 +600,47 @@ display.PartDisplay.prototype =
 			if(valid===undefined)
 				valid = this.p.validate();
 			showScoreFeedback(c,valid,this.p.score,this.p.marks,Numbas.exam);
+		}
+
+		if(Numbas.exam.showAnswerState)
+		{
+			if(this.p.markingFeedback.length)
+			{
+				var feedback = [];
+				var maxMarks = this.p.marks - (this.p.stepsShown ? this.p.settings.stepsPenalty : 0);
+				var t = 0;
+				for(var i=0;i<this.p.markingFeedback.length;i++)
+				{
+					var action = this.p.markingFeedback[i];
+					var change = 0;
+
+					switch(action.op) {
+					case 'addCredit':
+						change = action.credit*maxMarks;
+						if(action.gap!=undefined)
+							change *= this.p.gaps[action.gap].marks/this.p.marks;
+						t += change;
+						break;
+					}
+
+					var message = action.message || '';
+					var marks = '*'+Math.abs(change)+'* '+util.pluralise(change,'mark','marks');
+
+					if(change>0)
+						message+='\nYou were awarded '+marks+'.';
+					else if(change<0)
+						message+='\n'+marks+' '+util.pluralise(change,'was','were')+' taken away.';
+					feedback.push(message);
+				}
+
+				feedback = textile(feedback.join('\n\n'));
+				c.find('#feedbackMessage:last').html(feedback).hide().fadeIn(500);
+				Numbas.display.typeset(c.find('#feedbackMessage:last')[0]);
+			}
+			else
+			{
+				c.find('#feedbackMessage:last').hide();
+			}
 		}
 	},
 
@@ -1031,6 +1069,8 @@ function showScoreFeedback(selector,answered,score,marks,settings)
 
 	answered = answered || score>0;
 
+	var scoreSelector = selector.find('#score:last');
+
 	if(settings.showTotalMark || settings.showActualMark)
 	{
 		if(answered)
@@ -1042,7 +1082,7 @@ function showScoreFeedback(selector,answered,score,marks,settings)
 			else if(settings.showTotalMark && settings.showActualMark)
 				scoreDisplay = niceNumber(score)+'/'+niceNumber(marks);
 
-			selector.find('#score')
+			scoreSelector
 				.show()
 				.html(scoreDisplay);
 		}
@@ -1051,12 +1091,12 @@ function showScoreFeedback(selector,answered,score,marks,settings)
 			if(settings.showTotalMark)
 			{
 				scoreDisplay = niceNumber(marks)+' '+(marks==1 ? 'mark' : 'marks');
-				selector.find('#score')
+				scoreSelector
 					.show()
 					.html(scoreDisplay);
 			}
 			else
-				selector.find('#score').hide();
+				scoreSelector.hide();
 
 		}
 
@@ -1065,12 +1105,12 @@ function showScoreFeedback(selector,answered,score,marks,settings)
 	{
 		if(answered)
 		{
-			selector.find('#score')
+			scoreSelector
 				.show()
 				.html('Answered');
 		}
 		else
-			selector.find('#score').hide();
+			scoreSelector.hide();
 	}
 
 	if( settings.showAnswerState )
@@ -1090,22 +1130,22 @@ function showScoreFeedback(selector,answered,score,marks,settings)
 			{
 				state = 'partial';
 			}
-			selector.find('#feedback')
+			selector.find('#feedback:last')
 				.show()
 				.attr('class',state)
 			;
 		}
 		else
 		{
-			selector.find('#feedback').attr('class','').hide();
+			selector.find('#feedback:last').attr('class','').hide();
 		}
 	}
 	else
 	{
-		selector.find('#feedback').hide();
+		selector.find('#feedback:last').hide();
 	}	
 
-	selector.find('#marks').each(function(){
+	selector.find('#marks:last').each(function(){
 		if(!$(this).is(':animated'))
 			$(this).fadeOut(200).fadeIn(200);
 	});

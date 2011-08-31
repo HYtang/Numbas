@@ -21,7 +21,7 @@ import traceback
 import shutil
 from optparse import OptionParser
 import examparser
-from exam import Exam
+from exam import Exam,ExamError
 import json
 from makesettings import makesettings
 from zipfile import ZipFile
@@ -118,6 +118,10 @@ def makeExam(options):
 		options.examJSON = json.dumps(exam.export())
 		options.resources = exam.resources
 		options.extensions = exam.extensions
+	except ExamError as err:
+		print("Error constructing exam:")
+		print(err)
+		raise 
 	except examparser.ParseError as err:
 		print("Failed to compile exam due to parsing error.")
 		raise
