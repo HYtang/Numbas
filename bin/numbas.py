@@ -23,7 +23,7 @@ from optparse import OptionParser
 import examparser
 from exam import Exam
 import json
-from xml2js import xml2js
+from makesettings import makesettings
 from zipfile import ZipFile
 
 def collectFiles(options):
@@ -81,7 +81,7 @@ def compileToDir(options):
 			shutil.copyfile(src,dst)
 	
 	f=open(os.path.join(options.output,'settings.js'),'w',encoding='utf-8')
-	f.write(options.xmls)
+	f.write(options.settings)
 	f.close()
 
 	print("Exam created in %s" % os.path.relpath(options.output))
@@ -104,7 +104,7 @@ def compileToZip(options):
 		dst = cleanpath(dst)
 		f.write(src,dst)
 
-	f.writestr('settings.js',options.xmls.encode('utf-8'))
+	f.writestr('settings.js',options.settings.encode('utf-8'))
 
 	print("Exam created in %s" % os.path.relpath(options.output))
 
@@ -112,27 +112,20 @@ def compileToZip(options):
 
 def makeExam(options):
 	data = open(options.source,encoding='utf-8').read()
-	if(options.xml):
-		examXML = data
-		options.resources=[]
-		options.extensions=[]
-	else:
-		try:
-			exam = Exam.fromstring(data)
-			examXML = exam.tostring()
-			obj = exam.export()
-			print(json.dumps(obj,sort_keys=True,indent=4))
-			options.resources = exam.resources
-			options.extensions = exam.extensions
-		except examparser.ParseError as err:
-			print("Failed to compile exam due to parsing error.")
-			raise
-		except:
-			print("Failed to compile exam")
-			traceback.print_exc(file=sys.stdout)
-			raise
-	options.examXML = examXML
-	options.xmls = xml2js(options)
+	try:
+		exam = Exam.fromstring(data)
+		options.examXML = exam.tostring()
+		options.examJSON = json.dumps(exam.export())
+		options.resources = exam.resources
+		options.extensions = exam.extensions
+	except examparser.ParseError as err:
+		print("Failed to compile exam due to parsing error.")
+		raise
+	except:
+		print("Failed to compile exam")
+		traceback.print_exc(file=sys.stdout)
+		raise
+	options.settings = makesettings(options)
 
 	try:
 		if options.zip:
@@ -153,12 +146,6 @@ if __name__ == '__main__':
 		path = os.getcwd()
 
 	parser = OptionParser(usage="usage: %prog [options] source")
-	parser.add_option('-x','--xml',
-						dest='xml',
-						action='store_true',
-						default=False,
-						help='The input is an XML file'
-		)
 	parser.add_option('-t','--theme',
 						dest='theme',
 						action='store',

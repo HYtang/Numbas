@@ -27,7 +27,7 @@ def encodeHandlebars(hbs):
 	hbs = re.sub('"',r'\"',hbs)
 	return hbs
 
-def xml2js(options):
+def makesettings(options):
 
 #include XSLT
 	themedir = os.path.join(options.theme,'xslt')
@@ -58,21 +58,18 @@ Numbas.rawxml = {
 		%s
 	},
 
-	handlebars: {
+	examXML: \"%s\"
+};
+
+Numbas.raw = {
+	templates: {
 		%s
 	},
 
-	examXML: \"%s\"
+	examJSON: %s
 };
 	
 });
-""" % (str(extensionfiles),all, ',\n\t\t'.join(allHBS), encode(options.examXML))
+""" % (str(extensionfiles),all, encode(options.examXML), ',\n\t\t'.join(allHBS), options.examJSON)
 	return out
 
-if __name__ == '__main__':
-	if(len(sys.argv)>1):
-		examXMLfile = sys.argv[1]
-	else:
-		examXMLfile = os.path.join('..','exams','examXML.xml')
-	examXML = open(examXMLfile,encoding='utf-8').read()
-	out = xml2js(examXML,os.path.join('..','themes','default'))
