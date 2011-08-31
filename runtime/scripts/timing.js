@@ -24,7 +24,7 @@ var timing = Numbas.timing = {
 	},
 
 
-	secsToDisplayTime: function( time )
+	secsToDisplayTime: function( time, words )
 	{		
 		if(time<0)
 			return '-'+Numbas.timing.secsToDisplayTime(-time);
@@ -48,18 +48,29 @@ var timing = Numbas.timing = {
 		}		
 				
 		seconds = Math.floor(remainder);
-					
-		if( minutes<=9 )
-		{ 
-			minutes = "0" + minutes;
-		}
-		
-		if( seconds<=9 )
+				
+		if(words)
 		{
-			seconds = "0" + seconds;
+			var displayTime = (hours ? hours+' '+(hours>1 ? 'hours' : 'hour') : '')
+						+ (hours&&(minutes||seconds) ? ', ' : '')
+						+ (minutes ? minutes+' '+(minutes>1 ? 'minutes' : 'minute') : '')
+						+ (minutes&&seconds ? ', ' : '')
+						+ (seconds ? seconds+' '+(seconds>1 ? 'seconds' : 'second') : '');
 		}
-		
-		displayTime = hours + ":" + minutes + ":" + seconds;
+		else
+		{
+			if( minutes<=9 )
+			{ 
+				minutes = "0" + minutes;
+			}
+			
+			if( seconds<=9 )
+			{
+				seconds = "0" + seconds;
+			}
+			displayTime = hours + ":" + minutes + ":" + seconds;
+		}
+
 		return displayTime;	
 	},
 

@@ -49,7 +49,7 @@ var Exam = Numbas.Exam = function()
 	tryGetAttribute(this,'settings/timing','duration');
 	
 	//get text representation of exam duration
-	this.displayDuration = this.duration>0 ? Numbas.timing.secsToDisplayTime( this.duration ) : '';
+	this.displayDuration = this.duration>0 ? Numbas.timing.secsToDisplayTime( this.duration, true ) : '';
 						
 	//get timing events
 	this.timerEvents = {};
