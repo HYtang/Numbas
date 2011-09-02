@@ -54,7 +54,7 @@ Numbas.showError = function(e)
 	}
 	else
 	{
-		message = (e || e.message)+'';
+		message = (typeof(e)=='string' ? e : e.message)+'';
 	}
 	Numbas.debug(e.stack || message);
 	Numbas.display.showAlert(message);

@@ -27,15 +27,28 @@ var display = Numbas.display = {
 		Handlebars.registerHelper('render',function(){
 			 return this.display.render();
 		});
-		Handlebars.registerHelper('textile',function(block,context){
-			return textile(block);
+		Handlebars.registerHelper('textile',function(txt){
+			txt = txt.replace(/(^|\n)\s+/g,'$1');
+			return textile(txt);
+		});
+		Handlebars.registerHelper('partIndex',function(part,block){
+			if(!part.parentPart && part.question.parts.length>1)
+				return block(part);
+			else
+				return '';
 		});
 
 		var templates = Numbas.templates = {};
 		for(var x in Numbas.raw.templates)
 		{
-			templates[x] = Handlebars.compile(Numbas.raw.templates[x]);
-			Handlebars.registerPartial(x,templates[x]);
+			try{
+				templates[x] = Handlebars.compile(Numbas.raw.templates[x]);
+				Handlebars.registerPartial(x,templates[x]);
+			}
+			catch(e)
+			{
+				throw(new Error('Failed to compile template *'+x+'*: '+e.message));
+			}
 		}
 	},
 	// update progress bar when loading
@@ -365,10 +378,7 @@ display.QuestionDisplay.prototype =
 
 		//display question's html
 		
-		$('#questionDisplay').html(this.html);
-
-		//remove empty paragraphs
-		$('#questionDisplay p').filter(function(){return /^(\s|&nbsp;)*$/.test($(this).html())}).remove();
+		$('#questionDisplay').html(this.render());
 
 		if($('.statement').text().trim()=='')	//hide statement block if empty
 			$('.statement').hide();
@@ -554,16 +564,8 @@ display.PartDisplay.prototype =
 	//produce HTML representing this part
 	render: function()
 	{
-		var p = this.p;
-		var obj = {
-			path: p.path,
-			index: p.index || 'a',
-			isGap: (p.parentPart && p.parentPart.type=='gapfill'),
-			prompt: textile('*hi*!'),
-			p: p
-		};
-		Handlebars.registerPartial('answer',Numbas.templates[p.type]);
-		return Numbas.templates['part'](obj);
+		Handlebars.registerPartial('answer',Numbas.templates[this.p.type]);
+		return Numbas.templates[this.p.isGap ? 'gap' : 'part'](this.p);
 	},
 
 	//called when part is displayed (basically when question is changed)

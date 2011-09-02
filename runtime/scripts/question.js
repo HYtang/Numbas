@@ -305,7 +305,8 @@ function Part( json, path, question, parentPart, loading )
 	//initialise settings object
 	this.settings = util.copyobj(Part.prototype.settings);
 	
-	['marks','prompt'].map(tryLoad());
+	['type','marks','prompt'].map(tryLoad());
+	this.rawprompt = this.prompt;
 
 	['minimumMarks','enableMinimumMarks','stepsPenalty'].map(tryLoad('',this.settings));
 
@@ -360,7 +361,11 @@ Part.prototype = {
 	display: undefined,		//code to do with displaying this part
 
 	subvars: function() {
-		this.prompt = jme.contentsubvars(this.prompt,this.question.variables,this.question.functions);
+		this.prompt = jme.contentsubvars(this.rawprompt,this.question.variables,this.question.functions);
+		for(var i=0;i<this.steps.length;i++)
+		{
+			this.steps[i].subvars();
+		}
 	},
 
 	//give the student a warning about this part
@@ -588,7 +593,10 @@ function JMEPart(json, path, question, parentPart, loading)
 	['start','end','points'].map(Numbas.json.tryLoad('answer.checking.range',settings.range,json));
 
 	//load string restrictions
-	['maxLength','minLength','mustHave','notAllowed'].map(function(x){settings[x] = util.copyinto(json.answer[x],util.copyobj(settings[x]))});
+	['maxLength','minLength','mustHave','notAllowed'].map(function(x){
+		settings[x] = util.copyobj(settings[x]);
+		util.copyinto(json.answer[x],settings[x])
+	});
 
 	this.display = new Numbas.display.JMEPartDisplay(this);
 
@@ -686,7 +694,7 @@ JMEPart.prototype =
 
 		
 		//do comparison of student's answer with correct answer
-		if(!jme.compare(this.studentAnswer, this.correctAnswer, this.settings.checking, this.question.followVariables))
+		if(!jme.compare(this.studentAnswer, this.correctAnswer, this.settings, this.question.followVariables))
 		{
 			this.setCredit(0,'Your answer is incorrect.');
 			return;
@@ -795,6 +803,7 @@ JMEPart.prototype =
 		return true;
 	}
 };
+JMEPart.prototype.subvars = util.extend(Part.prototype.subvars,JMEPart.prototype.subvars);
 
 
 function PatternMatchPart(json, path, question, parentPart, loading)
@@ -874,6 +883,7 @@ PatternMatchPart.prototype = {
 		return this.answered;
 	}
 };
+PatternMatchPart.prototype.subvars = util.extend(Part.prototype.subvars,PatternMatchPart.prototype.subvars);
 
 function NumberEntryPart(json, path, question, parentPart, loading)
 {
@@ -950,6 +960,7 @@ NumberEntryPart.prototype =
 		return this.answered;
 	}
 };
+NumberEntryPart.prototype.subvars = util.extend(Part.prototype.subvars,NumberEntryPart.prototype.subvars);
 
 
 function MultipleResponsePart(json, path, question, parentPart, loading)
@@ -1012,6 +1023,7 @@ function MultipleResponsePart(json, path, question, parentPart, loading)
 	}
 	var answers = this.settings.rawanswers = [];
 	this.answers = new Array(this.numAnswers);
+	for(var i=0;i<this.numAnswers;i++)
 	{
 		answers.push(json.answers[this.answerOrder[i]]);
 	}
@@ -1070,6 +1082,8 @@ function MultipleResponsePart(json, path, question, parentPart, loading)
 	{	//because we swapped answers and choices round in the marking matrix
 		this.numAnswers = this.numChoices;
 		this.numChoices = 1;
+		this.settings.rawanswers = this.settings.rawchoices;
+		this.settings.rawchoices = [''];
 		var flipped=true;
 	}
 	else
@@ -1225,6 +1239,7 @@ MultipleResponsePart.prototype =
 			return false;
 	}
 };
+MultipleResponsePart.prototype.subvars = util.extend(Part.prototype.subvars,MultipleResponsePart.prototype.subvars);
 
 function GapFillPart(json, path, question, parentPart, loading)
 {
@@ -1234,6 +1249,7 @@ function GapFillPart(json, path, question, parentPart, loading)
 	for( var i=0 ; i<json.gaps.length; i++ )
 	{
 		var gap = createPart(json.gaps[i], path+'g'+i, this.question, this, loading);
+		gap.isGap = true;
 		this.marks += gap.marks;
 		this.gaps[i]=gap;
 	}
@@ -1243,6 +1259,20 @@ function GapFillPart(json, path, question, parentPart, loading)
 GapFillPart.prototype =
 {
 	stagedAnswer: 'something',
+
+	subvars: function() {
+		for(var i=0;i<this.gaps.length;i++)
+		{
+			this.gaps[i].subvars();
+		}
+
+		//insert gapfills in prompt
+		var p = this;
+		this.prompt = this.prompt.replace(/\[\[(\d+)\]\]/,function(match,n) {
+			n = parseInt(n);
+			return p.gaps[n].display.render().trim();
+		});
+	},
 
 	revealAnswer: function()
 	{
@@ -1296,6 +1326,7 @@ GapFillPart.prototype =
 };
 GapFillPart.prototype.submit = util.extend(GapFillPart.prototype.submit, Part.prototype.submit);
 GapFillPart.prototype.revealAnswer = util.extend(GapFillPart.prototype.revealAnswer, Part.prototype.revealAnswer);
+GapFillPart.prototype.subvars = util.extend(Part.prototype.subvars,GapFillPart.prototype.subvars);
 
 function InformationPart(json, path, question, parentPart, loading)
 {

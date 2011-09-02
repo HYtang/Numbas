@@ -23,9 +23,9 @@ def encode(xml):
 	return xml
 
 def encodeHandlebars(hbs):
-	hbs = re.sub('\n',r'\\n',hbs)
+	hbs = re.sub('\n(?!$)',r'\\n',hbs)
 	hbs = re.sub('"',r'\"',hbs)
-	return hbs
+	return hbs.strip()
 
 def makesettings(options):
 
