@@ -492,7 +492,7 @@ class Function:
 		return {
 			'type': self.type,
 			'definition': self.definition,
-			'parameters': self.parameters
+			'parameters': [{name: x[0], type: x[1]} for x in self.parameters]
 		}
 
 class Part:
@@ -559,9 +559,11 @@ class Part:
 		return {
 			'type': self.kind,
 			'marks': self.marks,
+			'prompt': self.prompt,
 			'stepspenalty': self.stepsPenalty,
 			'enableminimummarks': self.enableMinimumMarks,
-			'minimummarks': self.minimumMarks
+			'minimummarks': self.minimumMarks,
+			'steps': [step.export() for step in self.steps]
 		}
 
 
@@ -646,22 +648,22 @@ class JMEPart(Part):
 		obj = super(JMEPart,self).export()
 		obj.update({
 			'answer': {
-				'correctanswer': self.answer,
-				'simplification': self.answerSimplification,
+				'correctAnswer': self.answer,
+				'answerSimplification': self.answerSimplification,
 				'checking': {
-					'type': self.checkingType,
-					'accuracy': self.checkingAccuracy,
-					'failurerate': self.failureRate,
+					'checkingType': self.checkingType,
+					'checkingAccuracy': self.checkingAccuracy,
+					'failureRate': self.failureRate,
 					'range': {
 						'start': self.vsetRangeStart,
 						'end': self.vsetRangeEnd,
 						'points': self.vsetRangePoints
 					},
-					'maxlength': self.maxLength.export(),
-					'minlength': self.minLength.export(),
-					'musthave': self.mustHave.export(),
-					'notAllowed': self.notAllowed.export()
-				}
+				},
+				'maxLength': self.maxLength.export(),
+				'minLength': self.minLength.export(),
+				'mustHave': self.mustHave.export(),
+				'notAllowed': self.notAllowed.export()
 			}
 		})
 		return obj
@@ -715,6 +717,7 @@ class Restriction:
 
 		if len(self.strings)>0:
 			obj['strings'] = self.strings
+			obj['showStrings'] = self.showStrings
 
 		return obj
 
@@ -750,10 +753,10 @@ class PatternMatchPart(Part):
 	def export(self):
 		obj = super(PatternMatchPart,self).export()
 		obj.update({
-			'displayanswer': self.displayAnswer,
-			'correctanswer': self.answer,
-			'casesensitive': self.caseSensitive,
-			'partialcredit': self.partialCredit
+			'displayAnswer': self.displayAnswer,
+			'correctAnswer': self.answer,
+			'caseSensitive': self.caseSensitive,
+			'partialCredit': self.partialCredit
 		})
 		return obj
 
@@ -798,11 +801,11 @@ class NumberEntryPart(Part):
 		obj = super(NumberEntryPart,self).export()
 		obj.update({
 			'answer': {
-				'minvalue': self.minvalue,
-				'maxvalue': self.maxvalue,
-				'inputstep': self.inputStep,
-				'integeranswer': self.integerAnswer,
-				'partialcredit': self.partialCredit
+				'minValue': self.minvalue,
+				'maxValue': self.maxvalue,
+				'inputStep': self.inputStep,
+				'integerAnswer': self.integerAnswer,
+				'partialCredit': self.partialCredit
 			}
 		})
 		return obj
@@ -818,6 +821,8 @@ class MultipleChoicePart(Part):
 	shuffleAnswers = False
 	displayType = 'radiogroup'
 	displayColumns = 0
+	warningType = 'warn'
+	warningMessage = 'You have not selected the correct number of choices.'
 	
 	def __init__(self,kind,marks=0,prompt=''):
 		self.kind = kind
@@ -840,12 +845,7 @@ class MultipleChoicePart(Part):
 		}
 
 		part.displayType = displayTypes[kind]
-		tryLoad(data,['minMarks','maxMarks','minAnswers','maxAnswers','shuffleChoices','shuffleAnswers','displayType','displayColumns'],part)
-
-		if 'minmarks' in data:
-			part.minMarksEnabled = True
-		if 'maxmarks' in data:
-			part.maxMarksEnabled = True
+		tryLoad(data,['minMarks','maxMarks','minAnswers','maxAnswers','shuffleChoices','shuffleAnswers','displayType','displayColumns','warningType','warningMessage'],part)
 
 		if 'choices' in data:
 			for choice in data['choices']:
@@ -916,17 +916,20 @@ class MultipleChoicePart(Part):
 	def export(self):
 		obj = super(MultipleChoicePart,self).export()
 		obj.update({
-			'minmarks': self.minMarks,
-			'maxmarks': self.maxMarks,
-			'minanswers': self.minAnswers,
-			'maxanswers': self.maxAnswers,
-			'shufflechoices': self.shuffleChoices,
-			'shuffleanswers': self.shuffleAnswers,
-			'displaytype': self.displayType,
-			'displaycolumns': self.displayColumns,
+			'minMarks': self.minMarks,
+			'maxMarks': self.maxMarks,
+			'minAnswers': self.minAnswers,
+			'maxAnswers': self.maxAnswers,
+			'shuffleChoices': self.shuffleChoices,
+			'shuffleAnswers': self.shuffleAnswers,
+			'displayType': self.displayType,
+			'displayColumns': self.displayColumns,
+			'warningType': self.warningType,
+			'warningMessage': self.warningMessage,
 			'choices': self.choices,
 			'answers': self.answers,
-			'matrix': self.matrix
+			'matrix': self.matrix,
+			'distractors': self.distractors
 		})
 		return obj
 

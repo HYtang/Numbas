@@ -653,7 +653,7 @@ var jme = Numbas.jme = {
 
 	texsubvars: function(s,variables,functions)
 	{
-		var cmdre = /(.*?)\\((?:var)|(?:simplify))/;
+		var cmdre = /^(.*?)\\((?:var)|(?:simplify))/;
 		var out = ''
 		while( m = s.match(cmdre) )
 		{
@@ -720,48 +720,62 @@ var jme = Numbas.jme = {
 	},
 
 	//substitutes variables into a string "text {expr1} text {expr2} ..."
+	//anything enclosed in double-curly braces is not touched (useful for things like embedded javascript)
 	subvars: function(str, variables,functions,display)
 	{
-		var bits = splitbrackets(str,'{','}');
-		if(bits.length==1)
-		{
-			return str;
-		}
 		var out = '';
-		for(var i=0; i<bits.length; i++)
+		var nbits = splitbrackets(str,'{{','}}');
+		for(var j=0;j<nbits.length;j++)
 		{
-			if(i % 2)
+			if(j % 2)
 			{
-				var v = jme.evaluate(jme.compile(bits[i],functions),variables,functions);
-				if(v.type=='number')
+				out+=nbits[j];
+			}
+			else{
+				var bits = splitbrackets(nbits[j],'{','}');
+				if(bits.length==1)
 				{
-					v = Numbas.math.niceNumber(v.value);
-					if(display)
-						v = ''+v+'';
-					else
-						v = '('+v+')';
-				}
-				else if(!display && v.type=='string')
-				{
-					v="'"+v.value+"'";
-				}
-				else if(v.type=='list')
-				{
-					v = '['+v.value.map(function(x){return x.value;}).join(',')+']';
+					out+=bits[0];
 				}
 				else
 				{
-					v = v.value;
+					for(var i=0; i<bits.length; i++)
+					{
+						if(i % 2)
+						{
+							var v = jme.evaluate(jme.compile(bits[i],functions),variables,functions);
+							if(v.type=='number')
+							{
+								v = Numbas.math.niceNumber(v.value);
+								if(display)
+									v = ''+v+'';
+								else
+									v = '('+v+')';
+							}
+							else if(!display && v.type=='string')
+							{
+								v="'"+v.value+"'";
+							}
+							else if(v.type=='list')
+							{
+								v = '['+v.value.map(function(x){return x.value;}).join(',')+']';
+							}
+							else
+							{
+								v = v.value;
+							}
+							if(display)
+							{
+								v = textile(' '+v);
+							}
+							out += v;
+						}
+						else
+						{
+							out+=bits[i];
+						}
+					}
 				}
-				if(display)
-				{
-					v = textile(' '+v);
-				}
-				out += v;
-			}
-			else
-			{
-				out+=bits[i];
 			}
 		}
 		return out;
@@ -1459,36 +1473,37 @@ var splitbrackets = jme.splitbrackets = function(t,lb,rb)
 {
 	var o=[];
 	var l=t.length;
+	var ll = lb.length, rl = rb.length;
 	var s=0;
 	var depth=0;
 	for(var i=0;i<l;i++)
 	{
-		if(t.charAt(i)==lb && !(i>0 && t.charAt(i-1)=='\\'))
+		if(t.slice(i,i+ll)==lb && !(i>0 && t.charAt(i-1)=='\\'))
 		{
 			depth+=1;
 			if(depth==1)
 			{
 				o.push(t.slice(s,i));
-				s=i+1;
+				s=i+ll;
 			}
-			else
+			else	//remove nested brackets
 			{
-				t = t.slice(0,i)+t.slice(i+1);
-				i-=1;
+				t = t.slice(0,i)+t.slice(i+ll);
+				i-=ll;
 			}
 		}
-		else if(t.charAt(i)==rb && !(i>0 && t.charAt(i-1)=='\\'))
+		else if(t.slice(i,i+rl)==rb && !(i>0 && t.charAt(i-1)=='\\'))
 		{
 			depth-=1;
 			if(depth==0)
 			{
 				o.push(t.slice(s,i));
-				s=i+1;
+				s=i+rl;
 			}
 			else
 			{
-				t = t.slice(0,i)+t.slice(i+1);
-				i -= 1;
+				t = t.slice(0,i)+t.slice(i+rl);
+				i -= rl;
 			}
 		}
 	}

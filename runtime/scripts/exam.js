@@ -15,15 +15,13 @@ Copyright 2011 Newcastle University
 */
 
 
-Numbas.queueScript('scripts/exam.js',['json','timing','util','xml','display','schedule','scorm-storage','pretendlms','math','question','jme-variables','jme-display'],function() {
+Numbas.queueScript('scripts/exam.js',['json','timing','util','display','schedule','scorm-storage','pretendlms','math','question','jme-variables','jme-display'],function() {
 
 
 // exam object keeps track of all info we need to know while exam is running
 var Exam = Numbas.Exam = function()
 {
 	var parseBool = Numbas.util.parseBool;
-
-	this.xml = Numbas.xml.loadXML(Numbas.rawxml.examXML).selectSingleNode('exam');
 
 	var json = this.json = Numbas.raw.examJSON;
 
@@ -58,7 +56,6 @@ var Exam = Numbas.Exam = function()
 	}
 		
 	//feedback
-	var feedbackPath = 'settings/feedback';
 	['showActualMark','showTotalMark','showAnswerState','allowRevealAnswer','adviceType','adviceThreshold'].map(tryLoad('settings.feedback'));
 
 	//rulesets
@@ -77,44 +74,6 @@ var Exam = Numbas.Exam = function()
 
 	this.rulesets['default'] = Numbas.jme.display.collectRuleset(['unitFactor','unitPower','unitDenominator','zeroFactor','zeroTerm','zeroPower','collectNumbers','zeroBase','constantsFirst','sqrtProduct','sqrtDivision','sqrtSquare','otherNumbers'],this.rulesets);
 
-	/*
-	for( i=0; i<rulesetNodes.length; i++)
-	{
-		var name = rulesetNodes[i].getAttribute('name');
-		var set = [];
-
-		//get new rule definitions
-		defNodes = rulesetNodes[i].selectNodes('ruledef');
-		for( var j=0; j<defNodes.length; j++ )
-		{
-			var pattern = defNodes[j].getAttribute('pattern');
-			var result = defNodes[j].getAttribute('result');
-			var conditions = [];
-			var conditionNodes = defNodes[j].selectNodes('conditions/condition');
-			for(var k=0; k<conditionNodes.length; k++)
-			{
-				conditions.push(Numbas.xml.getTextContent(conditionNodes[k]));
-			}
-			var rule = new Numbas.jme.display.Rule(pattern,conditions,result);
-			set.push(rule);
-		}
-
-		//get included sets
-		var includeNodes = rulesetNodes[i].selectNodes('include');
-		for(var j=0; j<includeNodes.length; j++ )
-		{
-			set.push(includeNodes[j].getAttribute('name'));
-		}
-
-		sets[name] = this.rulesets[name] = set;
-	}
-
-	for(var name in sets)
-	{
-		this.rulesets[name] = Numbas.jme.display.collectRuleset(sets[name],this.rulesets);
-	}
-	*/
-
 	//get text representation of exam duration
 	this.displayDuration = this.duration>0 ? Numbas.timing.secsToDisplayTime( this.duration, true ) : '';
 
@@ -126,7 +85,7 @@ var Exam = Numbas.Exam = function()
 }
 Exam.prototype = {
 
-	xml: undefined,				//base node of exam XML
+	json: undefined,			//JSON object defining exam
 
 	mode: 'entry',				//can be 	"entry" - exam not started yet
 								//			"in progress" - exam started, not finished
@@ -186,7 +145,7 @@ Exam.prototype = {
 	showAnswerState: false,		//tell student if answer is correct/wrong/partial ?
 	allowRevealAnswer: false,	//allow 'reveal answer' button ?
 	adviceType: '',				//something to do with when advice can be shown ??
-	adviceGlobalThreshold: 0, 	//if student scores lower than this percentage on a question, the advice is displayed
+	adviceThreshold: 0, 	//if student scores lower than this percentage on a question, the advice is displayed
 
 	display: undefined,			//display code
 
@@ -196,8 +155,8 @@ Exam.prototype = {
 		var job = Numbas.schedule.add;
 		var exam = this;
 		job(function() {
-			exam.functions = Numbas.jme.variables.makeFunctions(exam.xml);
-			exam.variables = Numbas.jme.variables.makeVariables(exam.xml,exam.functions);
+			exam.functions = Numbas.jme.variables.makeFunctions(exam.json.functions);
+			exam.variables = Numbas.jme.variables.makeVariables(exam.json.variables,exam.functions);
 		});
 		job(exam.chooseQuestionSubset,exam);			//choose questions to use
 		job(exam.makeQuestionList,exam);				//create question objects
@@ -283,7 +242,7 @@ Exam.prototype = {
 
 		this.questionList = [];
 		
-		var questions = this.xml.selectNodes("questions/question");
+		var questions = this.json.questions;
 		for(var i = 0; i<this.questionSubset.length; i++) 
 		{
 			job(function(i)

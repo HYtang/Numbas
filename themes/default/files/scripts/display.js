@@ -313,7 +313,7 @@ display.QuestionDisplay = function(q)
 	this.q = q;
 
 	//make html for question and advice text
-	this.html = $.xsl.transform(Numbas.xml.templates.question, q.xml).string;
+	//this.html = $.xsl.transform(Numbas.xml.templates.question, q.xml).string;
 
 	//make question selector for menu
 	var qs = $('#questionSelector').clone();

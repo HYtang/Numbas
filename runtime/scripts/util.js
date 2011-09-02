@@ -69,7 +69,7 @@ var util = Numbas.util = {
 		switch(typeof(obj))
 		{
 		case 'object':
-			if(obj.length!==undefined)
+			if(obj.length!==undefined && obj.constructor!==Object)
 			{
 				return util.copyarray(obj,deep);
 			}
@@ -90,13 +90,19 @@ var util = Numbas.util = {
 		}
 	},
 
-	//shallow copy object into already existing object
-	copyinto: function(src,dest)
+	//copy object into already existing object (shallow copy unless deep == true)
+	//doesn't overwrite properties if already present in dest object
+	copyinto: function(src,dest,deep)
 	{
 		for(var x in src)
 		{
 			if(dest[x]===undefined)
-				dest[x]=src[x]
+			{
+				if(deep)
+					dest[x]=util.copyobj(src[x],true);
+				else
+					dest[x]=src[x];
+			}
 		}
 	},
 

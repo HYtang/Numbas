@@ -13,40 +13,32 @@ Copyright 2011 Newcastle University
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-Numbas.queueScript('scripts/jme-variables.js',['schedule','jme','xml','util'],function() {
+Numbas.queueScript('scripts/jme-variables.js',['schedule','jme','util'],function() {
 
 var jme = Numbas.jme;
 var job = Numbas.schedule.add;
 
 jme.variables = {
-	makeFunctions: function(xml)
+	makeFunctions: function(json)
 	{
 		var functions = {};
 		var tmpFunctions = [];
 
-		//work out functions
-		var functionNodes = xml.selectNodes('functions/function');
-		if(!functionNodes)
-			return {};
-
 		//first pass: get function names and types
-		for(var i=0; i<functionNodes.length; i++)
+		for(var name in json)
 		{
-			var name = functionNodes[i].getAttribute('name').toLowerCase();
+			var fn = json[name];
+			var definition = fn.definition,
+				outtype = fn.outtype.toLowerCase(),
+				outcons = Numbas.jme.types[outtype];
 
-			var definition = functionNodes[i].getAttribute('definition');
-
-			var outtype = functionNodes[i].getAttribute('outtype').toLowerCase();
-			var outcons = Numbas.jme.types[outtype];
-
-			var parameterNodes = functionNodes[i].selectNodes('parameters/parameter');
 			var paramNames = [];
 			var intype = [];
-			for(var j=0; j<parameterNodes.length; j++)
+			for(var j=0; j<fn.parameters.length; j++)
 			{
-				var paramName = parameterNodes[j].getAttribute('name');
-				var paramType = parameterNodes[j].getAttribute('type').toLowerCase();
-				paramNames.push(paramName);
+				paramNames.push(fn.parameters[j].name);
+
+				var paramType = fn.parameters[j].type;
 				var incons = Numbas.jme.types[paramType];
 				intype.push(incons);
 			}
@@ -80,34 +72,20 @@ jme.variables = {
 		return functions;
 	},
 
-	makeVariables: function(xml,functions)
+	makeVariables: function(json,functions)
 	{
-		var variableNodes = xml.selectNodes('variables/variable');	//get variable definitions out of XML
-		if(!variableNodes)
-			return {};
-
 		//list of variable names to ignore because they don't make sense
 		var ignoreVariables = ['pi','e','date','year','month','monthname','day','dayofweek','dayofweekname','hour24','hour','minute','second','msecond','firstcdrom'];
 
 		//evaluate variables - work out dependency structure, then evaluate from definitions in correct order
 		var todo = {};
-		for( var i=0; i<variableNodes.length; i++ )
+		for( var name in json )
 		{
-			var name = variableNodes[i].getAttribute('name').toLowerCase();
 			if(!ignoreVariables.contains(name))
 			{
-				var value = variableNodes[i].getAttribute('value');
+				var value = json[name];
 
 				var vars = [];
-				//get vars referred to in string definitions like "hi {name}"
-				/*
-				var stringvars = value.split(/{(\w+)}/g);
-				for(var j=1;j<stringvars.length;j+=2)
-				{
-					if(!vars.contains(stringvars[j]))
-						vars.push(stringvars[j].toLowerCase());
-				}
-				*/
 
 				var tree = jme.compile(value,functions);
 				vars = vars.merge(jme.findvars(tree));
