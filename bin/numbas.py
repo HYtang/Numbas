@@ -114,7 +114,6 @@ def makeExam(options):
 	data = open(options.source,encoding='utf-8').read()
 	try:
 		exam = Exam.fromstring(data)
-		options.examXML = exam.tostring()
 		options.examJSON = json.dumps(exam.export())
 		options.resources = exam.resources
 		options.extensions = exam.extensions
@@ -220,5 +219,5 @@ if __name__ == '__main__':
 	try:
 		makeExam(options)
 	except:
-		pass
+		raise
 

@@ -187,26 +187,9 @@ Exam.prototype = {
 	},
 
 
-	//xmlize for info pages and so on
-	xmlize: function()
-	{
-		var obj = {};
-		var dontwant = ['xml','questionList','stopwatch','display','currentQuestion','navigationEvents','rulesets','functions','variables'];
-		for( var x in this )
-		{
-			if(!(dontwant.contains(x) || typeof(this[x])=='function'))
-				obj[x]=this[x];
-		}
-
-		return Sarissa.xmlize(obj,'exam');
-	},
-
 	//decide which questions to use and in what order
 	chooseQuestionSubset: function()
 	{
-		//get all questions out of XML
-		var tmpQuestionList = new Array();
-
 		//decide how many questions in this sitting
 		if( this.allQuestions )
 		{
@@ -445,41 +428,17 @@ Exam.prototype = {
 
 		//work out summary info
 		this.percentScore = Math.round(100*this.score/this.mark);
-		this.passed = this.percentScore >= this.percentPass;
-
-		//construct report object
-		var report = this.report = 
-		{	examsummary: {	name: this.name,
-							numberofquestions: this.numQuestions, 
-							mark: this.mark,
-							passpercentage: this.percentPass,
-							duration: this.displayDuration 
-						 },
-			performancesummary: {	start: this.start.toGMTString(),
-									stop: this.stop.toGMTString(),
-									timespent: Numbas.timing.secsToDisplayTime(this.timeSpent),
-									score: this.score,
-									percentagescore: this.percentScore,
-									passed: this.passed,
-									result: (this.passed ? 'Passed' :'Failed')
-								},
-			questions: new Array()
-		};
+		this.passed = 100*this.score/this.mark >= this.percentPass;
+		this.result = this.passed ? 'Passed' : 'Failed';
 
 		//construct reports for each question
 		var examQuestionsAttempted = 0;
 		for(var j=0; j<this.questionList.length; j++)
 		{
-			var question = this.questionList[j];
-			if(question.answered)
+			if(this.questionList[j].answered)
 				examQuestionsAttempted++;
-
-			report.questions.push({question: {	number: question.number+1,
-												name: question.name,
-												marks: question.marks,
-												score: question.score } });
 		}
-		report.performancesummary.questionsattempted = examQuestionsAttempted;
+		this.questionsAttempted = examQuestionsAttempted;
 
 
 		//send result to LMS, and tell it we're finished

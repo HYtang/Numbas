@@ -16,7 +16,6 @@
 
 
 import re
-import xml.etree.ElementTree as etree
 from textile import textile
 import examparser
 import sys
@@ -59,39 +58,6 @@ def makeContentNode(s,doTextile=True):
 	else:
 		s='<span>'+s+'</span>'
 	return etree.fromstring('<content>'+s+'</content>')
-
-#make an XML element tree. Pass in an array of arrays or strings.
-def makeTree(struct):
-	if struct == list(struct):
-		name = struct[0]
-		elem = etree.Element(name)
-		for x in struct[1:]:
-			elem.append(makeTree(x))
-		return elem
-	elif struct == str(struct):
-		return etree.Element(struct)
-	elif etree.iselement(struct):
-		return struct
-
-#indent XML so it is readable
-def indent(elem, level=0):
-	i = "\n" + level*"\t"
-	if len(elem):
-		if not elem.text or not elem.text.strip():
-			elem.text = i + "\t"
-		if not elem.tail or not elem.tail.strip():
-			elem.tail = i
-		for elem in elem:
-			indent(elem, level+1)
-		if not elem.tail or not elem.tail.strip():
-			elem.tail = i
-	else:
-		if level and (not elem.tail or not elem.tail.strip()):
-			elem.tail = i
-
-#append a list of elements or tree structures (see makeTree) to an XML element
-def appendMany(element,things):
-	[element.append(x if etree.iselement(x) else makeTree(x)) for x in things]
 
 #exam object
 class Exam:
@@ -195,77 +161,6 @@ class Exam:
 		return exam
 
 
-	def toxml(self):
-		root = makeTree(['exam',
-							['settings',
-								['navigation'],
-								['timing'],
-								['feedback',
-									['advice']
-								],
-								['rulesets']
-							],
-							['functions'],
-							['variables'],
-							['questions']
-						])
-		root.attrib = {
-				'name': self.name,
-				'percentPass': str(self.percentPass)+'%',
-				'shuffleQuestions': str(self.shuffleQuestions),
-			}
-		
-		settings = root.find('settings')
-
-		nav = settings.find('navigation')
-		nav.attrib = {
-			'reverse':str(self.navigation['reverse']), 
-			'browse': str(self.navigation['browse']),
-			'showfrontpage': str(self.navigation['showfrontpage'])
-		}
-
-		nav.append(self.navigation['onadvance'].toxml())
-		nav.append(self.navigation['onreverse'].toxml())
-		nav.append(self.navigation['onmove'].toxml())
-
-		timing = settings.find('timing')
-		timing.attrib = {'duration': str(self.duration)}
-		timing.append(self.timing['timeout'].toxml())
-		timing.append(self.timing['timedwarning'].toxml())
-
-		feedback = settings.find('feedback')
-		feedback.attrib = {
-				'showactualmark': str(self.showactualmark),
-				'showtotalmark': str(self.showtotalmark),
-				'showanswerstate': str(self.showanswerstate),
-				'allowrevealanswer': str(self.allowrevealanswer)
-		}
-		feedback.find('advice').attrib = {'type':self.adviceType, 'threshold': str(self.adviceThreshold)}
-
-		rules = settings.find('rulesets')
-		for name in self.rulesets.keys():
-			st = etree.Element('set',{'name':name})
-			for rule in self.rulesets[name]:
-				if isinstance(rule,str):
-					st.append(etree.Element('include',{'name':rule}))
-				else:
-					st.append(rule.toxml())
-			rules.append(st)
-
-		variables = root.find('variables')
-		for variable in self.variables:
-			variables.append(variable.toxml())
-
-		functions = root.find('functions')
-		for function in self.functions:
-			functions.append(function.toxml())
-
-		questions = root.find('questions')
-		for q in self.questions:
-			questions.append(q.toxml())
-
-		return root
-
 	#return a simplified object suitable for putting into JSON/.exam format
 	def export(self):
 		obj = {
@@ -304,14 +199,6 @@ class Exam:
 		}
 		return obj
 
-	def tostring(self):
-		try:
-			xml = self.toxml()
-			indent(xml)
-			return(etree.tostring(xml,encoding="UTF-8").decode('utf-8'))
-		except etree.ParseError as err:
-			print('XML Error:',str(err))
-
 class SimplificationRule:
 	pattern = ''
 	result = ''
@@ -325,19 +212,6 @@ class SimplificationRule:
 		tryLoad(data,['pattern','conditions','result'],rule)
 		return rule
 
-	def toxml(self):
-		rule = makeTree(['ruledef',
-							['conditions']
-						])
-		rule.attrib = {	'pattern': self.pattern,
-						'result': self.result
-						}
-		conditions = rule.find('conditions')
-		for condition in self.conditions:
-			conditions.append(etree.fromstring('<condition>'+condition+'</condition>'))
-
-		return rule
-	
 	def export(self):
 		return {
 			'pattern': self.pattern,
@@ -356,12 +230,6 @@ class Event:
 		self.action = action
 		self.message = message
 
-	def toxml(self):
-		event = makeTree(['event'])
-		event.attrib = {'type':self.kind, 'action': self.action}
-		event.append(makeContentNode(self.message))
-		return event
-	
 	def export(self):
 		return {
 			'action': self.action,
@@ -402,35 +270,6 @@ class Question:
 
 		return question
 
-	def toxml(self):
-		question = makeTree(['question',
-								['statement'],
-								['parts'],
-								['advice'],
-								['notes'],
-								['variables'],
-								['functions']
-							])
-
-		question.attrib = {'name': self.name}
-		question.find('statement').append(makeContentNode(self.statement))
-		question.find('advice').append(makeContentNode(self.advice))
-
-		parts = question.find('parts')
-		for part in self.parts:
-			parts.append(part.toxml())
-
-		variables = question.find('variables')
-		for variable in self.variables:
-			variables.append(variable.toxml())
-
-		functions = question.find('functions')
-		for function in self.functions:
-			functions.append(function.toxml())
-
-
-		return question
-
 	def export(self):
 		return {
 			'name': self.name,
@@ -449,13 +288,6 @@ class Variable:
 		self.name = name
 		self.definition = definition
 	
-	def toxml(self):
-		variable = etree.Element('variable',{
-			'name': str(self.name),
-			'value': str(self.definition)
-			})
-		return variable
-
 class Function:
 	name = ''
 	type = ''
@@ -471,23 +303,6 @@ class Function:
 		tryLoad(data,['parameters','type','definition'],function)
 		return function
 	
-	def toxml(self):
-		function = makeTree(['function',
-								['parameters']
-							])
-		function.attrib = { 'name': self.name,
-							'outtype': self.type,
-							'definition': self.definition
-							}
-		
-		parameters = function.find('parameters')
-
-		for pname,ptype in self.parameters:
-			parameter = etree.Element('parameter',{'name': pname, 'type': ptype})
-			parameters.append(parameter)
-
-		return function
-
 	def export(self):
 		return {
 			'type': self.type,
@@ -542,19 +357,6 @@ class Part:
 
 		return part
 	
-	def toxml(self):
-		part = makeTree(['part',['prompt'],['steps']])
-
-		part.attrib = {'type': self.kind, 'marks': str(self.marks), 'stepspenalty': str(self.stepsPenalty), 'enableminimummarks': str(self.enableMinimumMarks), 'minimummarks': str(self.minimumMarks)}
-
-		part.find('prompt').append(makeContentNode(self.prompt))
-
-		steps = part.find('steps')
-		for step in self.steps:
-			steps.append(step.toxml())
-
-		return part
-
 	def export(self):
 		return {
 			'type': self.kind,
@@ -616,34 +418,6 @@ class JMEPart(Part):
 
 		return part
 
-	def toxml(self):
-		part = Part.toxml(self)
-		part.append(makeTree(['answer',
-								['correctanswer',['math']],
-								['checking',
-										['range']
-								]
-							]))
-
-		answer = part.find('answer')
-		correctAnswer = answer.find('correctanswer')
-		correctAnswer.attrib = {'simplification': str(self.answerSimplification)}
-		correctAnswer.find('math').text = str(self.answer)
-		
-		checking = answer.find('checking')
-		checking.attrib = {
-				'type': self.checkingType, 
-				'accuracy': str(self.checkingAccuracy),
-				'failurerate': str(self.failureRate)
-		}
-		checking.find('range').attrib = {'start': str(self.vsetRangeStart), 'end': str(self.vsetRangeEnd),  'points': str(self.vsetRangePoints)}
-		answer.append(self.maxLength.toxml())
-		answer.append(self.minLength.toxml())
-		answer.append(self.mustHave.toxml())
-		answer.append(self.notAllowed.toxml())
-
-		return part
-
 	def export(self):
 		obj = super(JMEPart,self).export()
 		obj.update({
@@ -690,22 +464,6 @@ class Restriction:
 
 		return restriction
 
-	def toxml(self):
-		restriction = makeTree([self.name,'message'])
-
-		restriction.attrib = {'partialcredit': str(self.partialCredit)+'%', 'showstrings': str(self.showStrings)}
-		if self.length>=0:
-			restriction.attrib['length']=str(self.length)
-
-		for s in self.strings:
-			string = etree.Element('string')
-			string.text = s
-			restriction.append(string)
-
-		restriction.find('message').append(makeContentNode(self.message,doTextile=False))
-
-		return restriction
-
 	def export(self):
 		obj = {
 			'message': self.message,
@@ -738,18 +496,6 @@ class PatternMatchPart(Part):
 
 		return part
 
-	def toxml(self):
-		part = Part.toxml(self)
-		appendMany(part,['displayanswer','correctanswer','case'])
-		
-		part.find('displayanswer').append(makeContentNode(self.displayAnswer))
-
-		part.find('correctanswer').text = str(self.answer)
-
-		part.find('case').attrib = {'sensitive': str(self.caseSensitive), 'partialcredit': str(self.partialCredit)+'%'}
-
-		return part
-
 	def export(self):
 		obj = super(PatternMatchPart,self).export()
 		obj.update({
@@ -777,23 +523,6 @@ class NumberEntryPart(Part):
 		tryLoad(data,['integerAnswer','partialCredit','minvalue','maxvalue','inputStep'],part)
 		if 'answer' in data:
 			part.maxvalue = part.minvalue = data['answer']
-
-		return part
-
-	def toxml(self):
-		part = Part.toxml(self)
-		part.append(makeTree(['answer',
-								['allowonlyintegeranswers'],
-							]
-							))
-
-		answer = part.find('answer')
-		answer.attrib = {
-				'minvalue': str(self.minvalue),
-				'maxvalue': str(self.maxvalue),
-				'inputstep': str(self.inputStep)
-				}
-		answer.find('allowonlyintegeranswers').attrib = {'value': str(self.integerAnswer), 'partialcredit': str(self.partialCredit)+'%'}
 
 		return part
 
@@ -867,52 +596,6 @@ class MultipleChoicePart(Part):
 
 		return part
 
-	def toxml(self):
-		part = Part.toxml(self)
-		appendMany(part,['choices','answers',['marking','matrix','maxmarks','minmarks','distractors']])
-
-		choices = part.find('choices')
-		choices.attrib = {
-			'minimumexpected': str(self.minAnswers),
-			'maximumexpected': str(self.maxAnswers),
-			'displaycolumns': str(self.displayColumns),
-			'order': 'random' if self.shuffleChoices else 'fixed',
-			'displaytype': self.displayType
-			}
-
-		for choice in self.choices:
-			choices.append(makeTree(['choice',makeContentNode(choice)]))
-
-		answers = part.find('answers')
-		answers.attrib = {'order': 'random' if self.shuffleAnswers else 'fixed'}
-		for answer in self.answers:
-			answers.append(makeTree(['answer',makeContentNode(answer)]))
-
-		marking = part.find('marking')
-		marking.find('maxmarks').attrib = {'enabled': str(self.maxMarksEnabled), 'value': str(self.maxMarks)}
-		marking.find('minmarks').attrib = {'enabled': str(self.minMarksEnabled), 'value': str(self.minMarks)}
-		matrix = marking.find('matrix')
-		for i in range(len(self.matrix)):
-			for j in range(len(self.matrix[i])):
-				mark = etree.Element('mark',{
-					'answerindex': str(j), 
-					'choiceindex': str(i), 
-					'value': str(self.matrix[i][j])
-					})
-				matrix.append(mark)
-
-		distractors = marking.find('distractors')
-		for i in range(len(self.distractors)):
-			for j in range(len(self.distractors[i])):
-				distractor = etree.Element('distractor',{
-					'choiceindex': str(i),
-					'answerindex': str(j)
-				})
-				distractor.append(makeContentNode(self.distractors[i][j],doTextile=False))
-				distractors.append(distractor)
-
-		return part
-
 	def export(self):
 		obj = super(MultipleChoicePart,self).export()
 		obj.update({
@@ -962,39 +645,9 @@ class GapFillPart(Part):
 
 		return part
 	
-	def toxml(self):
-		self.marks = 0
-		for gap in self.gaps:
-			self.marks += gap.marks
-
-		prompt = self.prompt
-		self.prompt = re.sub(r"\[\[(.*?)\]\]",lambda m: '<gapfill reference="%s" />' % m.group(1),self.prompt)
-		part = Part.toxml(self)
-		self.prompt = prompt
-
-		gaps = etree.Element('gaps')
-		part.append(gaps)
-
-		for gap in self.gaps:
-			gaps.append(gap.toxml())
-
-		return part
-
 	def export(self):
 		obj = super(GapFillPart,self).export()
 		obj.update({
 			'gaps': [gap.export() for gap in self.gaps]
 		})
 		return obj
-
-if __name__ == '__main__':
-	if len(sys.argv)>1:
-		filename = sys.argv[1]
-	else:
-		filename=os.path.join('..','exams','testExam.exam')
-
-	data = open(filename,encoding='UTF-8').read()
-	exam = Exam.fromstring(data)
-
-	xml = exam.tostring()
-	sys.stdout.write(xml)

@@ -62,7 +62,7 @@ Numbas.showError = function(e)
 
 // Initialise the exam:
 // - Connect to the LMS, which might have saved student answers
-// - Load the exam XML and the XSL templates
+// - Load the display templates
 // - create and initialise the exam object
 // - display the frontpage
 // This function is called when all the other scripts have been loaded and executed. 
@@ -76,8 +76,6 @@ function init()
 	job(Numbas.storage.startLMS);			//Initialise the LMS. In a bit, the LMS will tell us if there is a previous attempt that can be resumed
 
 	job(Numbas.display.loadTemplates);
-
-	job(Numbas.xml.loadXMLDocs);				//load in all the XML and XSLT files
 
 	job(function()
 	{

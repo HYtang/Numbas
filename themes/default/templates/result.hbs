@@ -1,0 +1,66 @@
+<h3>{{name}} - Summary</h3>
+
+<table>
+	<tr>
+		<td>Number of Questions:</td>
+		<td class="rtd">{{numQuestions}}</td>
+	</tr>
+	<tr>
+		<td>Marks Available:</td>
+		<td class="rtd">{{mark}}</td>	
+	</tr>
+	<xsl:if test="passpercentage>0">
+	<tr>
+		<td>Pass Percentage:</td>
+		<td class="rtd">{{percentPass}}%</td>
+	</tr>
+	</xsl:if>
+	<tr>
+		<td>Time Allowed:</td>
+		<td class="rtd">{{displayDuration}}</td>
+	</tr>
+</table>
+
+<h3>Performance Summary</h3>
+<table>
+	<tr>
+		<td>Exam Start:</td>
+		<td class="rtd">{{GMTString start}}</td>	
+	</tr>	
+	<tr>
+		<td>Exam Stop:</td>
+		<td class="rtd">{{GMTString stop}}</td>	
+	</tr>
+	<tr>
+		<td>Time Spent:</td>
+		<td class="rtd">{{displayTime timeSpent}}</td>
+	</tr> 
+	<tr>
+		<td>Questions Attempted:</td>
+		<td class="rtd">{{questionsAttempted}} / {{numQuestions}}</td>
+	</tr>
+	<tr>
+		<td>Score:</td>
+		<td class="rtd">{{score}} / {{mark}} ({{percentScore}}%)</td>
+	</tr>
+	{{#if percentPass}}
+	<tr class="resultrow">
+		<td>Result:</td>
+		<td class="rtd">{{result}}</td>	
+	</tr>							
+	{{/if}}
+</table>
+	<h3>Detailed Question Breakdown</h3>
+	<table class="questionsummary">
+		<tr>
+			<th>Question</th>
+			<th>Score</th>
+		</tr>		
+	{{#questionList}}
+		<tr>
+			<td>{{name}}</td>
+			<td>{{score}} / {{marks}}</td>
+		</tr>
+	{{/questionList}}
+	</table>
+</table>

@@ -16,7 +16,7 @@ Copyright 2011 Newcastle University
 
 //Display code
 
-Numbas.queueScript('scripts/display.js',['controls','math','xml','util','timing','jme','jme-display'],function() {
+Numbas.queueScript('scripts/display.js',['controls','math','util','timing','jme','jme-display'],function() {
 
 	var util = Numbas.util;
 
@@ -24,19 +24,36 @@ Numbas.queueScript('scripts/display.js',['controls','math','xml','util','timing'
 var display = Numbas.display = {
 	// compile handlebars templates and add helpers
 	loadTemplates: function() {
-		Handlebars.registerHelper('render',function(){
-			 return this.display.render();
+
+		//date/time stuff
+		Handlebars.registerHelper('GMTString',function(date){ 
+			return date.toGMTString()
 		});
+		Handlebars.registerHelper('displayTime',function(time){ 
+			return Numbas.timing.secsToDisplayTime(time,true) 
+		});
+
 		Handlebars.registerHelper('textile',function(txt){
 			txt = txt.replace(/(^|\n)\s+/g,'$1');
 			return textile(txt);
 		});
+
+
+		//because some logic inevitably needs to be done on some exam objects,
+		//they should provide a render method which does all that.
+		Handlebars.registerHelper('render',function(){
+			 return this.display.render();
+		});
+
+		//if part 
+		/*
 		Handlebars.registerHelper('partIndex',function(part,block){
 			if(!part.parentPart && part.question.parts.length>1)
 				return block(part);
 			else
 				return '';
 		});
+		*/
 
 		var templates = Numbas.templates = {};
 		for(var x in Numbas.raw.templates)
@@ -280,11 +297,8 @@ display.ExamDisplay.prototype =
 			break;
 
 		case "result":
-			//turn report into XML
-			var xmlDoc = Sarissa.xmlize(exam.report,"report");
-
-			//display result page using report XML
-			$('#infoDisplay').getTransform(Numbas.xml.templates.result,xmlDoc);
+			//display result page using template
+			$('#infoDisplay').html(Numbas.templates.result(Numbas.exam));
 			
 			//make exit button 
 			$('#exitBtn').click(Numbas.controls.exitExam);	

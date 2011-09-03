@@ -16,29 +16,12 @@ import os
 import re
 import sys
 
-def encode(xml):
-	xml = re.sub('\n|\r','',xml)
-	xml = re.sub('\\\\',r'\\\\',xml)
-	xml = re.sub('"','\\"',xml)
-	return xml
-
 def encodeHandlebars(hbs):
 	hbs = re.sub('\n(?!$)',r'\\n',hbs)
 	hbs = re.sub('"',r'\"',hbs)
 	return hbs.strip()
 
 def makesettings(options):
-
-#include XSLT
-	themedir = os.path.join(options.theme,'xslt')
-
-	all = ''
-	files = filter(lambda x: x[-5:]=='.xslt', os.listdir(themedir))
-	for x in files:
-		if len(all):
-			all+=',\n\t\t'
-		s = x[:-5]+': \"'+encode(open(os.path.join(themedir,x),encoding='utf-8').read())+'\"'
-		all+=s
 
 #include handlebars templates
 	themedir = os.path.join(options.theme,'templates')
@@ -53,14 +36,6 @@ def makesettings(options):
 	extensionfiles = ['extensions/'+x+'/'+x+'.js'for x in [os.path.split(y)[1] for y in options.extensions]]
 
 	out = """Numbas.queueScript('settings.js',%s,function() {
-Numbas.rawxml = {
-	templates: {
-		%s
-	},
-
-	examXML: \"%s\"
-};
-
 Numbas.raw = {
 	templates: {
 		%s
@@ -70,6 +45,6 @@ Numbas.raw = {
 };
 	
 });
-""" % (str(extensionfiles),all, encode(options.examXML), ',\n\t\t'.join(allHBS), options.examJSON)
+""" % (str(extensionfiles),',\n\t\t'.join(allHBS), options.examJSON)
 	return out
 

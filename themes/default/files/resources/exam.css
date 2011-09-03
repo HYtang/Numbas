@@ -306,7 +306,7 @@ html{
 .rtd {
 	text-align:right;
 }
-.qtd {
+table.questionsummary td, table.questionsummary th{
 	text-align:center;
 }
 
