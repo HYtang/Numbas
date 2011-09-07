@@ -79,6 +79,8 @@ var Question = Numbas.Question = function( json, number, loading, gvariables, gf
 		for(var j = 0; j<q.json.parts.length; j++)
 		{
 			var part = createPart(q.json.parts[j], 'p'+j,q,null, loading);
+			if(q.json.parts.length>1)
+				part.index='abcdefghijklmnopqrstuvwxyz'[j];
 			q.parts[j] = part;
 			q.marks += part.marks;
 		}
@@ -662,7 +664,9 @@ JMEPart.prototype =
 	},
 
 	subvars: function() {
-		this.correctAnswer = jme.subvars(this.settings.correctAnswer,this.question.variables,this.question.functions);
+		this.correctAnswer = jme.display.simplifyExpression(
+				jme.subvars(this.settings.correctAnswer,this.question.variables,this.question.functions),
+				this.settings.answerSimplification);
 	},
 
 	mark: function()
@@ -914,8 +918,9 @@ NumberEntryPart.prototype =
 	},
 
 	subvars: function() {
-		this.maxValue = jme.evaluate(jme.subvars(this.settings.maxValue,this.question.variables,this.question.functions),this.question.variables,this.question.functions);
-		this.minValue = jme.evaluate(jme.subvars(this.settings.minValue,this.question.variables,this.question.functions),this.question.variables,this.question.functions);
+		this.maxValue = jme.evaluate(jme.subvars(this.settings.maxValue,this.question.variables,this.question.functions),this.question.variables,this.question.functions).value;
+		this.minValue = jme.evaluate(jme.subvars(this.settings.minValue,this.question.variables,this.question.functions),this.question.variables,this.question.functions).value;
+		this.displayAnswer = (this.maxValue+this.minValue)/2;
 	},
 
 	mark: function()
@@ -1268,7 +1273,7 @@ GapFillPart.prototype =
 
 		//insert gapfills in prompt
 		var p = this;
-		this.prompt = this.prompt.replace(/\[\[(\d+)\]\]/,function(match,n) {
+		this.prompt = this.prompt.replace(/\[\[(\d+)\]\]/g,function(match,n) {
 			n = parseInt(n);
 			return p.gaps[n].display.render().trim();
 		});

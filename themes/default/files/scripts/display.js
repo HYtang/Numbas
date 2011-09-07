@@ -833,8 +833,8 @@ display.JMEPartDisplay.prototype =
 		var c = this.answerContext();
 		c.find('#jme')
 			.attr('disabled','true')
-			.val(this.p.settings.correctAnswer);
-		this.inputChanged(this.p.settings.correctAnswer,true);
+			.val(this.p.correctAnswer);
+		this.inputChanged(this.p.correctAnswer,true);
 		c.find('#preview').css('color','#555')
 						  .mouseout();			//for some reason just hiding the input doesn't work, so simulate a mouseout to do the same thing
 	},
@@ -939,7 +939,7 @@ display.NumberEntryPartDisplay.prototype =
 		var c = this.answerContext();
 		c.find('#numberentry')
 			.attr('disabled','true')
-			.val(this.p.settings.displayAnswer);
+			.val(this.p.displayAnswer);
 	}
 };
 display.NumberEntryPartDisplay = extend(display.PartDisplay,display.NumberEntryPartDisplay,true);

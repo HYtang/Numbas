@@ -1,6 +1,6 @@
 <div class="part" id="{{path}}">
 	{{#if index}}
-		<h4 class="partheader">{{index}}</h4>
+		<h4 class="partheader">{{index}})</h4>
 	{{/if}}
 	<span id="prompt">{{{textile prompt}}}</span>
 	<span id="answer-{{path}}">{{> answer}}</span>
@@ -8,6 +8,15 @@
 		<img src="resources/exclamation-red.png"/>
 		<span class="partwarning"></span>
 	</span>
+	{{#if steps.length}}
+	<div class="steps" id="steps-{{path}}">
+	{{#steps}}
+	{{{render this}}}
+	{{/steps}}
+	</div>
+	<div class="stepsBtnDiv" id="stepsBtnDiv-{{path}}"><input type="button" value="Show steps" class="btn" id="stepsBtn"></input></div>
+	{{/if}}
+	{{#if marks}}
 	<div id="partFeedback">
 		<input class="btn" id="submitPart" value="Submit part" type="button"></input>
 		<div id="marks">
@@ -15,5 +24,6 @@
 			<span id="feedback"><img src="resources/cross.png"/></span>
 		</div>
 	</div>
+	{{/if}}
 	<div id="feedbackMessage"></div>
 </div>
