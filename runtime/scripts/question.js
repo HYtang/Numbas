@@ -109,9 +109,6 @@ var Question = Numbas.Question = function( json, number, loading, gvariables, gf
 			else if(q.adviceDisplayed)
 				q.getAdvice(true);
 		}
-		
-		q.display.makeHTML();
->>>>>>> master
 	});
 
 }

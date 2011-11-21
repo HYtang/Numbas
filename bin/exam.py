@@ -308,7 +308,7 @@ class Function:
 		return {
 			'type': self.type,
 			'definition': self.definition,
-			'parameters': [{name: x[0], type: x[1]} for x in self.parameters]
+			'parameters': [{"name": x[0], "type": x[1]} for x in self.parameters]
 		}
 
 class Part:

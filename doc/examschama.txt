@@ -179,10 +179,10 @@
 
 					minMarks: number	#minimum score to award
 					maxMarks: number	#maximum score to award
-					minAnswers: number	#minimum answers student can select for each choice
-					maxAnswers: number	#maximum answers student can select for each choice
+					minAnswers: number	#minimum answers student can select for each choice (m_n_ parts only)
+					maxAnswers: number	#maximum answers student can select for each choice (m_n_ parts only)
 					shuffleChoices: boolean	#shuffle order of choices?
-					shuffleAnswers: boolean	#shuffle order of answers?
+					shuffleAnswers: boolean	#shuffle order of answers? (m_n_x parts only)
 					displayType: string	#radiogroup or checkbox or dropdown
 					displayColumns:	number	#if type is 1_n_2 or m_n_2, how many columns to arrange choices into
 
