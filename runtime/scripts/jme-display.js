@@ -41,12 +41,17 @@ jme.display = {
 	//simplify a JME expression and return it as a JME string
 	simplifyExpression: function(expr,ruleset)
 	{
+		if(expr.trim()=='')
+			return '';
 		return treeToJME(jme.display.simplify(expr,ruleset));
 	},
 
 	//simplify a JME expression and return it as a syntax tree
 	simplify: function(expr,ruleset)
 	{
+		if(expr.trim()=='')
+			return;
+
 		if(!ruleset)
 			ruleset = simplificationRules.basic;
 		ruleset = collectRuleset(ruleset,Numbas.exam.rulesets);
@@ -58,7 +63,7 @@ jme.display = {
 		}
 		catch(e) 
 		{
-			e.message += '\nSimplifying expression failed. Expression was: '+expr;
+			//e.message += '\nSimplifying expression failed. Expression was: '+expr;
 			throw(e);
 		}
 	},
@@ -195,7 +200,7 @@ var texOps = {
 			{
 				s+=' ';
 			}
-			else if (thing.args[i].tok.type=='number' && (thing.args[i].tok.value==Math.PI || thing.args[i].tok.value==Math.E || thing.args[i].tok.value.complex) && thing.args[i-1].tok.type=='number')	//number times Pi or E
+			else if (thing.args[i].tok.type=='number' && (thing.args[i].tok.value==Math.PI || thing.args[i].tok.value==Math.E || thing.args[i].tok.value.complex) && thing.args[i-1].tok.type=='number' && !(thing.args[i-1].tok.value.complex))	//real number times Pi or E
 			{
 				s+=' ';
 			}
@@ -203,10 +208,21 @@ var texOps = {
 			{
 				s+=' ';
 			}
+			else if ( !(thing.args[i-1].tok.type=='number' && math.eq(thing.args[i-1].tok.value,math.complex(0,1))) && thing.args[i].tok.type=='number' && math.eq(thing.args[i].tok.value,math.complex(0,1)))	//(anything except i) times i
+			{
+				s+=' ';
+			}
 			else if ( thing.args[i].tok.type=='number'
-					|| (!(thing.args[i-1].tok.type=='op' && thing.args[i-1].tok.name=='-u') &&
-						(thing.args[i].tok.type=='op' && jme.precedence[thing.args[i].tok.name]<=jme.precedence['*'] && thing.args[i].tok.name!='-u' && (thing.args[i].args[0].tok.type=='number' && thing.args[i].args[0].tok.value!=Math.E))
+					||
+						thing.args[i].tok.type=='op' && thing.args[i].tok.name=='-u'
+					||
+					(
+						!(thing.args[i-1].tok.type=='op' && thing.args[i-1].tok.name=='-u') 
+						&& (thing.args[i].tok.type=='op' && jme.precedence[thing.args[i].tok.name]<=jme.precedence['*'] 
+							&& (thing.args[i].args[0].tok.type=='number' 
+							&& thing.args[i].args[0].tok.value!=Math.E)
 						)
+					)
 			)
 			{
 				s += ' \\times ';
@@ -485,7 +501,7 @@ var texify = Numbas.jme.display.texify = function(thing,settings)
 				return texRealNumber(tok.value);
 			}
 	case 'string':
-		return '\\textrm{"'+tok.value+'"}';
+		return '\\textrm{'+tok.value+'}';
 		break;
 	case 'boolean':
 		return tok.value ? 'true' : 'false';
@@ -541,8 +557,11 @@ var texify = Numbas.jme.display.texify = function(thing,settings)
 
 //turns an evaluation tree back into a JME expression
 //(used when an expression is simplified)
-function treeToJME(tree)
+var treeToJME = jme.display.treeToJME = function(tree)
 {
+	if(!tree)
+		return '';
+
 	var args=tree.args, l;
 
 	if(args!==undefined && ((l=args.length)>0))
@@ -572,6 +591,10 @@ function treeToJME(tree)
 	case 'range':
 		return tok.value[0]+'..'+tok.value[1]+(tok.value[2]==1 ? '' : '#'+tok.value[2]);
 	case 'list':
+		if(!bits)
+		{
+			bits = tok.value.map(function(b){return treeToJME({tok:b});});
+		}
 		return '[ '+bits.join(', ')+' ]';
 	case 'special':
 		return tok.value;
@@ -602,7 +625,9 @@ function treeToJME(tree)
 		//omit multiplication symbol when not necessary
 		if(op=='*')
 		{
-			if( (args[0].tok.type=='number' || args[0].bracketed) && (args[1].tok.type == 'name' || args[1].bracketed) )	//number or brackets followed by name or brackets doesn't need a times symbol
+			//number or brackets followed by name or brackets doesn't need a times symbol
+			//except <anything>*(-<something>) does
+			if( (args[0].tok.type=='number' || args[0].bracketed) && (args[1].tok.type == 'name' || args[1].bracketed && !(args[1].tok.type=='op' && args[1].tok.name=='-u')) )	
 			{
 				op = '';
 			}
@@ -636,7 +661,8 @@ var opBrackets = {
 	'^': {'+u':true,'-u':true,'+':true, '-':true, '*':true, '/':true},
 	'and': {'or':true, 'xor':true},
 	'or': {'xor':true},
-	'xor':{}
+	'xor':{},
+	'=': {}
 };
 
 var Rule = jme.display.Rule = function(pattern,conditions,result)
@@ -804,8 +830,11 @@ var simplificationRules = jme.display.simplificationRules = {
 		['x^0',[],'1']
 	],
 
+	noLeadingMinus: [
+		['-x+y',[],'y-x']											//don't start with a unary minus
+	],
+
 	collectNumbers: [
-		['-x+y',[],'y-x'],											//don't start with a unary minus
 		['-x-y',[],'-(x+y)'],										//collect minuses
 		['n+m',['n isa "number"','m isa "number"'],'eval(n+m)'],	//add numbers
 		['n-m',['n isa "number"','m isa "number"'],'eval(n-m)'],	//subtract numbers
@@ -821,7 +850,8 @@ var simplificationRules = jme.display.simplificationRules = {
 		['(x-n)-y',['n isa "number"'],'(x-y)-n'],
 
 		['n*m',['n isa "number"','m isa "number"'],'eval(n*m)'],		//multiply numbers
-		['x*n',['n isa "number"','!(x isa "number")'],'n*x']								//shift numbers to left hand side
+		['x*n',['n isa "number"','!(x isa "number")','n<>i'],'n*x'],			//shift numbers to left hand side
+		['m*(n*x)',['m isa "number"','n isa "number"'],'eval(n*m)*x']
 	],
 
 	simplifyFractions: [
@@ -836,7 +866,8 @@ var simplificationRules = jme.display.simplificationRules = {
 	],
 
 	constantsFirst: [
-		['x*n',['n isa "number"','!(x isa "number")'],'n*x']
+		['x*n',['n isa "number"','!(x isa "number")','n<>i'],'n*x'],
+		['x*(n*y)',['n isa "number"','n<>i','!(x isa "number")'],'n*(x*y)']
 	],
 
 	sqrtProduct: [

@@ -19,6 +19,7 @@ Numbas.queueScript('scripts/question.js',['schedule','display','jme','jme-variab
 
 var util = Numbas.util;
 var jme = Numbas.jme;
+var math = Numbas.math;
 
 var job = Numbas.schedule.add;
 
@@ -72,6 +73,9 @@ var Question = Numbas.Question = function( json, number, loading, gvariables, gf
 
 		q.adviceThreshold = Numbas.exam.adviceThreshold;
 		q.followVariables = {};
+		
+		//initialise display - get question HTML, make menu item, etc.
+		q.display = new Numbas.display.QuestionDisplay(q);
 
 		//load parts
 		q.parts=new Array();
@@ -84,11 +88,30 @@ var Question = Numbas.Question = function( json, number, loading, gvariables, gf
 			q.parts[j] = part;
 			q.marks += part.marks;
 		}
-	
 		q.subvars();
 
 		//initialise display - get question HTML, make menu item, etc.
 		q.display = new Numbas.display.QuestionDisplay(q);
+
+		if(loading)
+		{
+			var qobj = Numbas.store.loadQuestion(q);
+
+			q.adviceDisplayed = qobj.adviceDisplayed;
+			q.answered = qobj.answered;
+			q.revealed = qobj.revealed;
+			q.submitted = qobj.submitted;
+			q.visited = qobj.visited;
+			q.score = qobj.score;
+
+			if(q.revealed)
+				q.revealAnswer(true);
+			else if(q.adviceDisplayed)
+				q.getAdvice(true);
+		}
+		
+		q.display.makeHTML();
+>>>>>>> master
 	});
 
 }
@@ -113,8 +136,168 @@ Question.prototype =
 
 	display: undefined,		//display code
 
+	makeVariables: function(loading)
+	{
+		var q = this;
+		var myfunctions = q.functions = {};
+		var tmpFunctions = [];
+		job(function()
+		{
+			//get question's name
+			tryGetAttribute(q,'.','name');
+
+
+			q.adviceThreshold = Numbas.exam.adviceGlobalThreshold;
+
+			//work out functions
+			var functionNodes = q.xml.selectNodes('functions/function');
+
+			//first pass: get function names and types
+			for(var i=0; i<functionNodes.length; i++)
+			{
+				var name = functionNodes[i].getAttribute('name').toLowerCase();
+
+				var definition = functionNodes[i].getAttribute('definition');
+
+				var outtype = functionNodes[i].getAttribute('outtype').toLowerCase();
+				var outcons = Numbas.jme.types[outtype];
+
+				var parameterNodes = functionNodes[i].selectNodes('parameters/parameter');
+				var paramNames = [];
+				var intype = [];
+				for(var j=0; j<parameterNodes.length; j++)
+				{
+					var paramName = parameterNodes[j].getAttribute('name');
+					var paramType = parameterNodes[j].getAttribute('type').toLowerCase();
+					paramNames.push(paramName);
+					var incons = Numbas.jme.types[paramType];
+					intype.push(incons);
+				}
+
+				var tmpfunc = new jme.funcObj(name,intype,outcons,null,true);
+				tmpfunc.definition = definition;
+				tmpfunc.paramNames = paramNames;
+
+				if(q.functions[name]===undefined)
+					q.functions[name] = [];
+				q.functions[name].push(tmpfunc);
+				tmpFunctions.push(tmpfunc);
+			}
+		});
+
+		job(function()
+		{
+			//second pass: compile functions
+			for(var i=0; i<tmpFunctions.length; i++)
+			{
+				tmpFunctions[i].tree = jme.compile(tmpFunctions[i].definition,q.functions);
+
+				tmpFunctions[i].evaluate = function(args,variables,functions)
+				{
+					nvariables = Numbas.util.copyobj(variables);
+
+					for(var j=0;j<args.length;j++)
+					{
+						nvariables[this.paramNames[j]] = jme.evaluate(args[j],variables,functions);
+					}
+					return jme.evaluate(this.tree,nvariables,functions);
+				}
+			}
+		});
+
+		job(function()
+		{
+			//evaluate question variables
+			q.variables = {};
+			if(loading)
+			{
+				var qobj = Numbas.store.loadQuestion(q);
+				for(var x in qobj.variables)
+				{
+					q.variables[x] = qobj.variables[x];
+				}
+			}
+			else
+			{
+				var variableNodes = q.xml.selectNodes('variables/variable');	//get variable definitions out of XML
+
+				//list of variable names to ignore because they don't make sense
+				var ignoreVariables = ['pi','e','date','year','month','monthname','day','dayofweek','dayofweekname','hour24','hour','minute','second','msecond','firstcdrom'];
+
+				//evaluate variables - work out dependency structure, then evaluate from definitions in correct order
+				var todo = {};
+				for( var i=0; i<variableNodes.length; i++ )
+				{
+					var name = variableNodes[i].getAttribute('name').toLowerCase();
+					if(!ignoreVariables.contains(name))
+					{
+						var value = variableNodes[i].getAttribute('value');
+
+						var vars = [];
+						//get vars referred to in string definitions like "hi {name}"
+						/*
+						var stringvars = value.split(/{(\w+)}/g);
+						for(var j=1;j<stringvars.length;j+=2)
+						{
+							if(!vars.contains(stringvars[j]))
+								vars.push(stringvars[j].toLowerCase());
+						}
+						*/
+
+						var tree = jme.compile(value,q.functions);
+						vars = vars.merge(jme.findvars(tree));
+						todo[name]={
+							tree: tree,
+							vars: vars
+						};
+					}
+				}
+				function compute(name,todo,variables,path)
+				{
+					if(variables[name]!==undefined)
+						return;
+
+					if(path===undefined)
+						path=[];
+
+
+					if(path.contains(name))
+					{
+						alert("Circular variable reference in question "+name+' '+path);
+						return;
+					}
+
+					var v = todo[name];
+
+					if(v===undefined)
+						throw(new Error("Variable "+name+" not defined."));
+
+					//work out dependencies
+					for(var i=0;i<v.vars.length;i++)
+					{
+						var x=v.vars[i];
+						if(variables[x]===undefined)
+						{
+							var newpath = path.slice(0);
+							newpath.splice(0,0,name);
+							compute(x,todo,variables,newpath);
+						}
+					}
+
+					variables[name] = jme.evaluate(v.tree,variables,myfunctions);
+				}
+				for(var x in todo)
+				{
+					compute(x,todo,q.variables);
+				}
+			}
+
+		});
+	},
+
 	//sub variables into content and other strings
-	subvars: function() {
+	subvars: function()
+	{
 		var q = this;
 		['name','statement','advice'].map(function(x) {
 			q[x] = jme.contentsubvars(q[x],q.variables,q.functions);
@@ -133,34 +316,40 @@ Question.prototype =
 	},
 
 	//trigger advice
-	getAdvice: function()
+	getAdvice: function(loading)
 	{
 		this.adviceDisplayed = true;
-		this.display.showAdvice(true);
-		Numbas.store.adviceDisplayed(this);
+		if(!loading)
+		{
+			this.display.showAdvice(true);
+			Numbas.store.adviceDisplayed(this);
+		}
 	},
 
 	//reveal correct answer to student
-	revealAnswer: function()
+	revealAnswer: function(loading)
 	{
 		this.revealed = true;
 		this.answered = true;
 		
 		//display advice if allowed
-		this.getAdvice();
+		this.getAdvice(loading);
 
 		//part-specific reveal code. Might want to do some logging in future? 
 		for(var i=0; i<this.parts.length; i++)
-			this.parts[i].revealAnswer();
-
-		//display revealed answers
-		this.display.revealAnswer();
+			this.parts[i].revealAnswer(loading);
 
 		this.score = 0;
 
-		this.display.showScore();
+		if(!loading)
+		{
+			//display revealed answers
+			this.display.revealAnswer();
 
-		Numbas.store.answerRevealed(this);
+			this.display.showScore();
+
+			Numbas.store.answerRevealed(this);
+		}
 
 		Numbas.exam.updateScore();
 	},
@@ -171,7 +360,7 @@ Question.prototype =
 		var success = true;
 		for(i=0; i<this.parts.length; i++)
 		{
-			success = success && this.parts[i].answered;
+			success = success && (this.parts[i].answered || this.parts[i].marks==0);
 		}
 		return success;
 	},
@@ -195,10 +384,13 @@ Question.prototype =
 		}
 
 		var tmpScore=0;
+		var answered = true;
 		for(var i=0; i<this.parts.length; i++)
 		{
 			tmpScore += this.parts[i].score;
+			answered = answered && this.parts[i].answered;
 		}
+		this.answered = answered;
 		
 		if( uiWarning!="uwPrevent" )
 		{
@@ -331,6 +523,12 @@ function Part( json, path, question, parentPart, loading )
 
 	//initialise display code
 	this.display = new Numbas.display.PartDisplay(this);
+
+	if(loading)
+	{
+		var pobj = Numbas.store.loadPart(this);
+		this.answered = pobj.answered;
+	}
 }
 
 Part.prototype = {
@@ -410,7 +608,7 @@ Part.prototype = {
 				else
 				{
 					var change = this.score - oScore;
-					this.markingComment(util.formatString('You were awarded *%s* %s for your answers to the steps.',change,util.pluralise(change,'mark','marks')));
+					this.markingComment(util.formatString('You were awarded *%s* %s for your answers to the steps.',math.niceNumber(change),util.pluralise(change,'mark','marks')));
 				}
 			}
 		}
@@ -441,7 +639,7 @@ Part.prototype = {
 			var stepsMax = this.marks - this.settings.stepsPenalty;
 			this.markingComment(
 				this.settings.stepsPenalty>0 
-					? util.formatString('You revealed the steps. The maximum you can score for this part is *%s* %s. Your scores will be scaled down accordingly.',stepsMax,util.pluralise(stepsMax,'mark','marks')) 
+					? util.formatString('You revealed the steps. The maximum you can score for this part is *%s* %s. Your scores will be scaled down accordingly.',math.niceNumber(stepsMax),util.pluralise(stepsMax,'mark','marks')) 
 					: 'You revealed the steps.');
 		}
 
@@ -475,7 +673,7 @@ Part.prototype = {
 		{
 			this.reportStudentAnswer(this.studentAnswer);
 			if(!(this.parentPart && this.parentPart.type=='gapfill'))
-				this.markingComment('You scored *'+this.score+'* '+util.pluralise(this.score,'mark','marks')+' for this part.');
+				this.markingComment('You scored *'+math.niceNumber(this.score)+'* '+util.pluralise(this.score,'mark','marks')+' for this part.');
 		}
 		else
 			this.reportStudentAnswer('');
@@ -545,24 +743,28 @@ Part.prototype = {
 	validate: function() { return true; },
 
 	//reveal the steps
-	showSteps: function()
+	showSteps: function(loading)
 	{
 		this.stepsShown = true;
 		this.calculateScore();
-		this.display.showSteps();
-		this.question.updateScore();
+		if(!loading)
+		{
+			this.display.showSteps();
+			this.question.updateScore();
+		}
 	},
 
 	//reveal the correct answer
-	revealAnswer: function()
+	revealAnswer: function(loading)
 	{
-		this.display.revealAnswer();
+		if(!loading)
+			this.display.revealAnswer();
 		this.answered = true;
 		this.setCredit(0);
-		this.showSteps();
+		this.showSteps(loading);
 		for(var i=0; i<this.steps.length; i++ )
 		{
-			this.steps[i].revealAnswer();
+			this.steps[i].revealAnswer(loading);
 		}
 	}
 
@@ -586,7 +788,7 @@ function JMEPart(json, path, question, parentPart, loading)
 	settings.answerSimplification = Numbas.jme.display.collectRuleset(json.answer.answerSimplification,Numbas.exam.rulesets);
 
 	settings.displaySimplification = {
-		fractionNumbers: settings.answerSimplification.fractionNumbers
+	//	fractionNumbers: settings.answerSimplification.fractionNumbers
 	};
 	
 	//get checking type, accuracy, checking range
@@ -605,7 +807,9 @@ function JMEPart(json, path, question, parentPart, loading)
 	if(loading)
 	{
 		var pobj = Numbas.store.loadPart(this);
-		this.studentAnswer = pobj.studentAnswer;
+		this.stagedAnswer = [pobj.studentAnswer];
+		if(this.answered)
+			this.submit();
 	}
 }
 
@@ -736,7 +940,11 @@ JMEPart.prototype =
 		{
 			if(this.settings.mustHave.showStrings)
 			{
-				this.addCredit(0,'Your answer must contain all of: <span class="monospace">'+this.settings.mustHave.strings.join('</span>, <span class="monospace">')+'</span>');
+				var message = this.settings.mustHave.length==1 ?
+					'Your answer must contain <span class="monospace">'+this.settings.mustHave[0]+'</span>' 
+				: 
+					'Your answer must contain all of: <span class="monospace">'+this.settings.mustHave.join('</span>, <span class="monospace">')+'</span>';
+				this.addCredit(0,message);
 			}
 			this.multCredit(this.settings.mustHave.partialCredit,this.settings.mustHave.message);
 		}
@@ -745,7 +953,11 @@ JMEPart.prototype =
 		{
 			if(this.settings.notAllowed.showStrings)
 			{
-				this.addCredit(0,'Your answer must not contain any of: <span class="monospace">'+this.settings.notAllowed.string.sjoin('</span>, <span class="monospace">')+'</span>');
+				var message = this.settings.notAllowed.length==1 ?
+					'Your answer must not contain <span class="monospace">'+this.settings.notAllowed[0]+'</span>'
+				:
+					'Your answer must not contain any of: <span class="monospace">'+this.settings.notAllowed.join('</span>, <span class="monospace">')+'</span>';
+				this.addCredit(0,message);
 			}
 			this.multCredit(this.settings.notAllowed.partialCredit,this.settings.notAllowed.message);
 		}
@@ -822,7 +1034,9 @@ function PatternMatchPart(json, path, question, parentPart, loading)
 	if(loading)
 	{
 		var pobj = Numbas.store.loadPart(this);
-		this.studentAnswer = pobj.studentAnswer;
+		this.stagedAnswer = [pobj.studentAnswer];
+		if(this.answered)
+			this.submit();
 	}
 }
 PatternMatchPart.prototype = {
@@ -901,7 +1115,9 @@ function NumberEntryPart(json, path, question, parentPart, loading)
 	if(loading)
 	{
 		var pobj = Numbas.store.loadPart(this);
-		this.studentAnswer = pobj.studentAnswer;
+		this.stagedAnswer = [pobj.studentAnswer+''];
+		if(this.answered)
+			this.submit();
 	}
 }
 NumberEntryPart.prototype =
@@ -1001,21 +1217,21 @@ function MultipleResponsePart(json, path, question, parentPart, loading)
 		this.choiceOrder=[];
 		if(settings.shuffleChoices)
 		{
-			this.choiceOrder = Numbas.math.deal(this.numChoices);
+			this.choiceOrder = math.deal(this.numChoices);
 		}
 		else
 		{
-			this.choiceOrder = Numbas.math.range(this.numChoices);
+			this.choiceOrder = math.range(this.numChoices);
 		}
 
 		this.answerOrder=[];
 		if(settings.shuffleAnswers)
 		{
-			this.answerOrder = Numbas.math.deal(this.numAnswers);
+			this.answerOrder = math.deal(this.numAnswers);
 		}
 		else
 		{
-			this.answerOrder = Numbas.math.range(this.numAnswers);
+			this.answerOrder = math.range(this.numAnswers);
 		}
 	}
 
@@ -1034,8 +1250,8 @@ function MultipleResponsePart(json, path, question, parentPart, loading)
 	}
 
 	//invert the shuffle so we can now tell where particular choices/answers went
-	this.choiceOrder = Numbas.math.inverse(this.choiceOrder);
-	this.answerOrder = Numbas.math.inverse(this.answerOrder);
+	this.choiceOrder = math.inverse(this.choiceOrder);
+	this.answerOrder = math.inverse(this.answerOrder);
 
 	//fill marks matrix and load distractor messages
 	var matrix=[];
@@ -1094,32 +1310,46 @@ function MultipleResponsePart(json, path, question, parentPart, loading)
 	else
 		var flipped=false;
 
-	//ticks array - which answers/choices are selected?
-	this.ticks=[];
-	this.stagedAnswer = [];
-	for( i=0; i<this.numAnswers; i++ )
-	{
-		this.ticks.push([]);
-		this.stagedAnswer.push([]);
-		for( var j=0; j<this.numChoices; j++ )
-		{
-			this.ticks[i].push(false);
-			this.stagedAnswer[i].push(false);
-		}
-	}
-
 	//restore saved choices
 	if(loading)
 	{
+		this.stagedAnswer = [];
+		for( i=0; i<this.numAnswers; i++ )
+		{
+			this.stagedAnswer.push([]);
+			for( var j=0; j<this.numChoices; j++ )
+			{
+				this.stagedAnswer[i].push(false);
+			}
+		}
 		for( i=0;i<this.numAnswers;i++)
 		{
 			for(j=0;j<this.numChoices;j++)
 			{
-				if( (flipped && (pobj.ticks[j][i])) || (!flipped && pobj.ticks[i][j]) )
-					this.ticks[i][j]=true;
+				if(pobj.ticks[i][j])
+					this.stagedAnswer[i][j]=true;
+			}
+		}
+		if(this.answered)
+			this.submit();
+	}
+	else
+	{
+		//ticks array - which answers/choices are selected?
+		this.ticks=[];
+		this.stagedAnswer = [];
+		for( i=0; i<this.numAnswers; i++ )
+		{
+			this.ticks.push([]);
+			this.stagedAnswer.push([]);
+			for( var j=0; j<this.numChoices; j++ )
+			{
+				this.ticks[i].push(false);
+				this.stagedAnswer[i].push(false);
 			}
 		}
 	}
+
 
 	//if this part has a minimum number of answers more than zero, then
 	//we start in an error state
@@ -1260,6 +1490,12 @@ function GapFillPart(json, path, question, parentPart, loading)
 	}
 
 	this.display = new Numbas.display.GapFillPartDisplay(this);
+
+	if(loading)
+	{
+		if(this.answered)
+			this.submit();
+	}
 }	
 GapFillPart.prototype =
 {
@@ -1282,7 +1518,7 @@ GapFillPart.prototype =
 	revealAnswer: function()
 	{
 		for(var i=0; i<this.gaps.length; i++)
-			this.gaps[i].revealAnswer();
+			this.gaps[i].revealAnswer(loading);
 	},
 
 	submit: function()

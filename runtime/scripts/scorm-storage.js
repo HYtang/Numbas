@@ -16,13 +16,25 @@ Copyright 2011 Newcastle University
 
 
 Numbas.queueScript('scripts/scorm-storage.js',[],function() {
-Numbas.storage = {
-	startLMS: function()
-	//tries to initialise the SCORM API
-	//if it isn't present, a pretend LMS is started
-	//(this could save student progress in localStorage)
+Numbas.storage.clean = function()
+{
+	for(x in localStorage) delete localStorage[x];
+};
+
+Numbas.storage.startLMS = function()
+//tries to initialise the SCORM API
+//if it isn't present, a pretend LMS is started
+//(this could save student progress in localStorage)
+{
+};
+
+//SCORM storage object - controls saving and loading of data from the LMS
+var SCORMStorage = Numbas.storage.SCORMStorage = function()
+{
+	if(!pipwerks.SCORM.init())
 	{
-		if(!pipwerks.SCORM.init())
+		//if the pretend LMS extension is loaded, we can start that up
+		if(Numbas.storage.PretendLMS)
 		{
 			if(!Numbas.storage.lms)
 			{
@@ -31,12 +43,13 @@ Numbas.storage = {
 			window.API_1484_11 = Numbas.storage.lms.API;
 			pipwerks.SCORM.init();
 		}
+		//otherwise return a blank storage object which does nothing
+		else
+		{
+			return new Numbas.storage.BlankStorage();	
+		}
 	}
-};
 
-//SCORM storage object - controls saving and loading of data from the LMS
-var SCORMStorage = Numbas.storage.SCORMStorage = function()
-{
 	this.getEntry();
 
 	//get all question-objective indices
@@ -103,7 +116,7 @@ SCORMStorage.prototype = {
 	//make an id string corresponding to a part
 	getPartId: function(part)
 	{
-		return 'q'+part.question.number+part.path;
+		return this.getQuestionId(part.question)+part.path;
 	},
 
 	//
@@ -152,6 +165,7 @@ SCORMStorage.prototype = {
 		this.set(prepath+'id', id);
 		this.set(prepath+'score.min',0);
 		this.set(prepath+'score.max',q.marks);
+		this.set(prepath+'score.raw',q.score || 0);
 		this.set(prepath+'success_status','unknown');
 		this.set(prepath+'completion_status','not attempted');
 		this.set(prepath+'progress_measure',0);
@@ -221,6 +235,11 @@ SCORMStorage.prototype = {
 			}
 			break;
 		}
+
+		for(var i=0;i<p.steps.length;i++)
+		{
+			this.initPart(p.steps[i]);
+		}
 	},
 
 
@@ -228,6 +247,8 @@ SCORMStorage.prototype = {
 	setSuspendData: function()
 	{
 		var exam = this.e;
+		if(exam.loading)
+			return;
 		var eobj = 
 		{
 			timeRemaining: exam.timeRemaining,
@@ -257,6 +278,13 @@ SCORMStorage.prototype = {
 			revealed: question.revealed,
 			variables: question.variables
 		};
+
+		qobj.variables = {}
+		for(var name in question.variables)
+		{
+			qobj.variables[name] = Numbas.jme.display.treeToJME({tok: question.variables[name]});
+		}
+
 		qobj.parts = [];
 		for(var i=0;i<question.parts.length;i++)
 		{
@@ -268,7 +296,9 @@ SCORMStorage.prototype = {
 
 	partSuspendData: function(part)
 	{
-		var pobj = {};
+		var pobj = {
+			answered: part.answered
+		};
 		switch(part.type)
 		{
 		case 'gapfill':
@@ -286,22 +316,34 @@ SCORMStorage.prototype = {
 			break;
 		}
 
+		pobj.steps = [];
+		for(var i=0;i<part.steps.length;i++)
+		{
+			pobj.steps.push(this.partSuspendData(part.steps[i]));
+		}
+
 		return pobj;
 	},
 
 	getSuspendData: function()
 	{
 		if(!this.suspendData)
-			this.suspendData = JSON.parse(this.get('suspend_data'));
+		{
+			var suspend_data = this.get('suspend_data');
+			if(suspend_data.length)
+				this.suspendData = JSON.parse(suspend_data);
+		}
 		return this.suspendData;
 	},
 
 	//get suspended exam info
 	//returns an object 
 	//{ timeRemaining, questionSubset, start, score }
-	load: function() 
+	load: function(exam) 
 	{
+		this.e = exam;
 		var eobj = this.getSuspendData();
+		this.set('exit','suspend');
 		
 		var location = this.get('location');
 		if(location.length)
@@ -326,13 +368,19 @@ SCORMStorage.prototype = {
 		var id = this.getQuestionId(question);
 		var index = this.questionIndices[id];
 
-		return {score: parseInt(this.get('objectives.'+index+'.score.raw'),10),
+		var variables = {};
+		for(var name in qobj.variables)
+		{
+			variables[name] = Numbas.jme.evaluate(qobj.variables[name]);
+		}
+
+		return {score: parseInt(this.get('objectives.'+index+'.score.raw') || 0,10),
 				visited: qobj.visited,
 				answered: qobj.answered,
 				submitted: qobj.submitted,
 				adviceDisplayed: qobj.adviceDisplayed,
 				revealed: qobj.revealed,
-				variables: qobj.variables
+				variables: variables
 		};
 	},
 
@@ -340,16 +388,33 @@ SCORMStorage.prototype = {
 	loadPart: function(part)
 	{
 		var eobj = this.getSuspendData();
-		var pobj = eobj.questions[part.question.number].parts[part.partNumber];
+		var pobj = eobj.questions[part.question.number];
+		var re = /(p|g|s)(\d+)/g;
+		while(m = re.exec(part.path))
+		{
+			var i = parseInt(m[2]);
+			switch(m[1])
+			{
+			case 'p':
+				pobj = pobj.parts[i];
+				break;
+			case 'g':
+				pobj = pobj.gaps[i];
+				break;
+			case 's':
+				pobj = pobj.steps[i];
+				break;
+			}
+		}
 		var id = this.getPartId( part );
 		var index = this.partIndices[id];
 
-		if(part.gapNumber!==undefined)
-			pobj = pobj.gaps[part.gapNumber];
+		var out = {
+			answered: pobj.answered
+		};
 
-		var out = {};
-
-		function get(key) { return this.get('interactions.'+index+'.'+key); };
+		var sc = this;
+		function get(key) { return sc.get('interactions.'+index+'.'+key); };
 
 		var answer = get('learner_response');
 		switch(part.type)
@@ -361,16 +426,20 @@ SCORMStorage.prototype = {
 			out.studentAnswer = answer || '';
 			break;
 		case 'numberentry':
-			out.studentAnswer = parseFloat(answer) || 0;
+			out.studentAnswer = parseFloat(answer) || '';
 			break;
 		case '1_n_2':
 		case 'm_n_2':
 		case 'm_n_x':
+			if(part.numAnswers===undefined)
+				return out;
 			var ticks = [];
-			for(var i=0;i<part.numAnswers;i++)
+			var w = part.type=='m_n_x' ? part.numAnswers : part.numChoices;
+			var h = part.type=='m_n_x' ? part.numChoices : part.numAnswers;
+			for(var i=0;i<w;i++)
 			{
 				ticks.push([]);
-				for(var j=0;j<part.numChoices;j++)
+				for(var j=0;j<h;j++)
 				{
 					ticks[i].push(false);
 				}
@@ -490,15 +559,18 @@ SCORMStorage.prototype = {
 			this.set(prepath+'learner_response',s);
 			break;
 		}
+		this.setSuspendData();
 	},
 
 	//called when current question is submitted
 	submitQuestion: function(question) 
 	{
 		var exam = Numbas.exam;
+		if(exam.loading)
+			return;
 		//update total exam score and so on
 		this.set('score.raw',exam.score);
-		this.set('score.scaled',exam.score/exam.mark);
+		this.set('score.scaled',exam.score/exam.mark || 0);
 
 		var id = this.getQuestionId(question);
 		var index = this.questionIndices[id];
@@ -506,7 +578,7 @@ SCORMStorage.prototype = {
 		var prepath = 'objectives.'+index+'.';
 
 		this.set(prepath+'score.raw',question.score);
-		this.set(prepath+'score.scaled',question.score/question.marks);
+		this.set(prepath+'score.scaled',question.score/question.marks || 0);
 		this.set(prepath+'success_status', question.score==question.marks ? 'passed' : 'failed' );
 		this.set(prepath+'completion_status', question.answered ? 'completed' : 'incomplete' );
 	},

@@ -15,8 +15,9 @@ Copyright 2011 Newcastle University
 */
 
 
-Numbas.queueScript('scripts/exam.js',['json','timing','util','display','schedule','scorm-storage','pretendlms','math','question','jme-variables','jme-display'],function() {
+Numbas.queueScript('scripts/exam.js',['json','timing','util','display','schedule','storage','scorm-storage','math','question','jme-variables','jme-display'],function() {
 
+	var job = Numbas.schedule.add;
 
 // exam object keeps track of all info we need to know while exam is running
 var Exam = Numbas.Exam = function()
@@ -35,7 +36,7 @@ var Exam = Numbas.Exam = function()
 	['name','duration','percentPass','allQuestions','selectQuestions','shuffleQuestions'].map(tryLoad());
 
 	this.navigation = Numbas.util.copyobj(this.navigation);
-	['reverse','browse','showFrontPage'].map(tryLoad('settings.navigation',this.navigation));
+	['allowregen','reverse','browse','showFrontPage'].map(tryLoad('settings.navigation',this.navigation));
 
 	//get navigation events and actions
 	var navEvents = this.navigation.events = {};
@@ -117,6 +118,7 @@ Exam.prototype = {
 		
 	//navigation
 	navigation: {
+		allowRegen: false,
 		showFrontPage: true,	//show the front page, or go straight to first question?
 		reverse: false,			//can student navigate to previous question?
 		browse: false,			//can student jump to any question they like?
@@ -152,7 +154,6 @@ Exam.prototype = {
 	//stuff to do when starting exam afresh
 	init: function()
 	{
-		var job = Numbas.schedule.add;
 		var exam = this;
 		job(function() {
 			exam.functions = Numbas.jme.variables.makeFunctions(exam.json.functions);
@@ -166,24 +167,30 @@ Exam.prototype = {
 	//restore previously started exam from storage
 	load: function()
 	{
-		var suspendData = Numbas.store.load();	//get saved info from storage
+		this.loading = true;
+		var suspendData = Numbas.store.load(this);	//get saved info from storage
 
-		this.timeRemaining = suspendData.timeRemaining;
-		this.questionSubset = suspendData.questionSubset;
-		this.start = new Date(suspendData.start);
-		this.score = suspendData.score;
+		job(function() {
+			this.timeRemaining = suspendData.timeRemaining;
+			this.questionSubset = suspendData.questionSubset;
+			this.numQuestions = this.questionSubset.length;
+			this.start = new Date(suspendData.start);
+			this.score = suspendData.score;
+		},this);
 
-		this.makeQuestionList(true);
+		job(this.makeQuestionList,this,true);
+		job(function() {
+			for(var i=0;i<this.numQuestions;i++)
+			{
+				var q = this.questionList[i];
+			}
+		},this);
 
-		if(suspendData.location!==undefined)
-			this.changeQuestion(suspendData.location);
-
-		for(i=0; i<this.numQuestions; i++)
-		{
-			if(this.questionList[i].visited)
-				this.questionList[i].display.showScore();
-		}
-		this.display.showScore();
+		job(function() {
+			if(suspendData.location!==undefined)
+				this.changeQuestion(suspendData.location);
+			this.loading = false;
+		},this);
 	},
 
 
@@ -221,8 +228,6 @@ Exam.prototype = {
 	//if loading, need to restore randomised variables instead of generating anew
 	makeQuestionList: function(loading)
 	{
-		var job = Numbas.schedule.add;
-
 		this.questionList = [];
 		
 		var questions = this.json.questions;
@@ -418,6 +423,21 @@ Exam.prototype = {
 		Numbas.store.changeQuestion(this.currentQuestion);
 	},
 
+	regenQuestion: function()
+	{
+		var e = this;
+		var n = e.currentQuestion.number;
+		job(e.display.startRegen,e.display);
+		job(function() {
+			e.questionList[n] = new Numbas.Question(e.xml.selectNodes('questions/question')[n], n, false, e.variables, e.functions);
+		})
+		job(function() {
+			e.changeQuestion(n);
+			e.display.showQuestion();
+		});
+		job(e.display.endRegen,e.display);
+	},
+
 	end: function()
 	{
 		//get time of finish
@@ -428,10 +448,11 @@ Exam.prototype = {
 
 		//work out summary info
 		this.percentScore = Math.round(100*this.score/this.mark);
-		this.passed = 100*this.score/this.mark >= this.percentPass;
+		this.passed = this.percentScore >= this.percentPass;
 		this.result = this.passed ? 'Passed' : 'Failed';
 
-		//construct reports for each question
+		var niceNumber = Numbas.math.niceNumber;
+
 		var examQuestionsAttempted = 0;
 		for(var j=0; j<this.questionList.length; j++)
 		{

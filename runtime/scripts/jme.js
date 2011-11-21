@@ -60,32 +60,22 @@ var jme = Numbas.jme = {
 			else if (result = expr.match(re_op))
 			{
 				token = result[0];
-				if(result[0]=='+' || result[0]=='-') 
+				//work out if operation is being used prefix or postfix
+				var nt;
+				if( tokens.length==0 || (nt=tokens[tokens.length-1].type)=='(' || nt==',' || nt=='[' || nt=='op' )
 				{
-					if(tokens.length>0) 
-					{
-						switch(tokens[tokens.length-1].type) 
-						{
-						case '(':
-						case ',':
-						case 'op':
-							token=result[0]+'u';		// '+u' and '-u' are the unary sign-changing operations, used if preceding token is appropriate punctuation or another operator
-						}
-					}else{
-						token=result[0]+'u';		// + or - at start of expression are interpreted to be unary sign thingies too
-					}
+					if(token in prefixForm)
+						token = prefixForm[token];
+				}
+				else
+				{
+					if(token in postfixForm)
+						token = postfixForm[token];
 				}
 				token=new TOp(token);
 			}
 			else if (result = expr.match(re_name))
 			{
-				//see if this is something like xsin, i.e. a single-letter variable name concatenated with a function name
-				var bit = result[1].match(builtinsre);
-				if(bit && bit[0].length==result[1].length-1)
-					{result[1] = result[1].substring(0,result[1].length-bit[0].length);}
-				else
-					{bit=null;}
-
 				// fill in constants here to avoid having more 'variables' than necessary
 				if(result[1].toLowerCase()=='e') {
 					token = new TNum(Math.E);
@@ -101,14 +91,6 @@ var jme = Numbas.jme = {
 				
 				if(tokens.length>0 && (tokens[tokens.length-1].type=='number' || tokens[tokens.length-1].type=='name' || tokens[tokens.length-1].type==')')) {	//number or right bracket or name followed by a name, eg '3y', is interpreted to mean multiplication, eg '3*y'
 					tokens.push(new TOp('*'));
-				}
-
-				// if this was something like xsin, put 'x','*' tokens on stack, then 'sin' token is what we say we read
-				if( bit )
-				{
-					tokens.push(new TName(result[1]));
-					tokens.push(new TOp('*'));
-					token=new TName(bit[0]);
 				}
 			}
 			else if (result = expr.match(re_punctuation))
@@ -360,6 +342,8 @@ var jme = Numbas.jme = {
 
 	substituteTree: function(tree,variables,allowUnbound)
 	{
+		if(!tree)
+			return null;
 		if(tree.tok.bound)
 			return tree;
 
@@ -709,6 +693,8 @@ var jme = Numbas.jme = {
 				if(!argbrackets)
 					args = 'all';
 				expr = jme.subvars(expr,variables,functions);
+				if(expr.search(/\[/)>=0)
+					throw(expr);
 				var tex = jme.display.exprToLaTeX(expr,args);
 				out += ' '+tex+' ';
 				break;
@@ -966,13 +952,25 @@ TConc.prototype.type = 'conc';
 
 var arity = jme.arity = {
 	'!': 1,
+	'not': 1,
+	'fact': 1,
 	'+u': 1,
 	'-u': 1
 }
 
+//some names represent different operations when used as prefix or as postfix. This dictionary translates them
+var prefixForm = {
+	'+': '+u',
+	'-': '-u',
+	'!': 'not',
+}
+var postfixForm = {
+	'!': 'fact'
+}
+
 var precedence = jme.precedence = {
 	'_': 0,
-	'!': 1,
+	'fact': 1,
 	'not': 1,
 	'^': 2,
 	'*': 3,
@@ -1001,7 +999,6 @@ var precedence = jme.precedence = {
 };
 
 var synonyms = {
-	'not':'!',
 	'&':'&&',
 	'and':'&&',
 	'divides': '|',
@@ -1145,14 +1142,14 @@ new funcObj('<', [TNum,TNum], TBool, math.lt );
 new funcObj('>', [TNum,TNum], TBool, math.gt );
 new funcObj('<=', [TNum,TNum], TBool, math.leq );
 new funcObj('>=', [TNum,TNum], TBool, math.geq );
-new funcObj('<>', [TNum], TBool, math.neq );
+new funcObj('<>', [TNum,TNum], TBool, math.neq );
 new funcObj('<>', ['?','?'], TBool, function(a,b){ return a!=b; } );
 new funcObj('=', [TNum,TNum], TBool, math.eq );
 new funcObj('=', [TName,TName], TBool, function(a,b){ return a==b; });
 new funcObj('=', ['?','?'], TBool, function(a,b){ return a==b; } );
 
 new funcObj('&&', [TBool,TBool], TBool, function(a,b){return a&&b;} );
-new funcObj('!', [TBool], TBool, function(a){return !a;} );	
+new funcObj('not', [TBool], TBool, function(a){return !a;} );	
 new funcObj('||', [TBool,TBool], TBool, function(a,b){return a||b;} );
 new funcObj('xor', [TBool,TBool], TBool, function(a,b){return (a || b) && !(a && b);} );
 
@@ -1388,7 +1385,7 @@ var checkingFunctions =
 	absdiff: function(r1,r2,tolerance) 
 	{
 		// finds absolute difference between values, fails if bigger than tolerance
-		return math.leq(Math.abs(math.sub(r1,r2)), tolerance);
+		return math.leq(math.abs(math.sub(r1,r2)), Math.abs(tolerance));
 	},
 
 	reldiff: function(r1,r2,tolerance) {

@@ -63,6 +63,8 @@ html{
 }
 
 #examBanner{
+	margin-left: 250px;
+	line-height:1em;
 	text-align:right;
 	font-size: 2em;
 	font-weight: bold;
@@ -97,7 +99,7 @@ html{
 .rightNav {
 	float:right;
 }
-.menuEndBtn {
+.menuButtons {
 	text-align:center;
 }
 
@@ -126,6 +128,11 @@ html{
 #submitBtn {
 	width: 9em;
 }
+
+#regenBtn {
+	width: auto;
+}
+
 #marks {
 	display:inline;
 }
@@ -271,6 +278,10 @@ html{
 	clear:both;
 }
 
+#adviceDisplay {
+	display: inline-block;
+}
+
 #adviceDisplay ol,ul {
 	margin-left:1em;
 }
@@ -351,6 +362,10 @@ div.part {
 	/*float:right;*/
 }
 
+.steps #prompt {
+	display:inline-block;
+}
+
 .advice {
 	background: #cfc;
 	border: 1px solid;
@@ -411,6 +426,9 @@ input[type=text],input[type=number] {
 .mathPreview {
 	cursor: pointer; cursor: hand;
 	color: #005;
+}
+.mathPreview:hover {
+	background: #f0f0f0;
 }
 
 .jme {

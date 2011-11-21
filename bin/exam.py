@@ -56,6 +56,7 @@ def makeContentNode(s,doTextile=True):
 	if doTextile:
 		s=textile(s)
 	else:
+		s = re.sub(r'&(?!#?\w+;)','&amp;',s)
 		s='<span>'+s+'</span>'
 	return etree.fromstring('<content>'+s+'</content>')
 
@@ -75,6 +76,7 @@ class Exam:
 	def __init__(self,name='Untitled Exam'):
 		self.name = name
 		self.navigation = {	
+				'allowregen': False,				#allow student to re-randomise a question?
 				'reverse': True,
 				'browse': True,
 				'showfrontpage': True,
@@ -115,7 +117,7 @@ class Exam:
 
 		if 'navigation' in data:
 			nav = data['navigation']
-			tryLoad(nav,['reverse','browse','showfrontpage'],exam.navigation)
+			tryLoad(nav,['allowregen','reverse','browse','showfrontpage'],exam.navigation)
 			for event in ['onadvance','onreverse','onmove']:
 				if event in nav:
 					tryLoad(nav[event],['action','message'],exam.navigation[event])
@@ -170,6 +172,7 @@ class Exam:
 			'duration': self.duration,
 			'settings': {
 				'navigation': {
+					'allowregen': self.navigation['allowregen'],
 					'reverse': self.navigation['reverse'],
 					'browse': self.navigation['browse'],
 					'showFrontPage': self.navigation['showfrontpage'],
@@ -188,8 +191,6 @@ class Exam:
 					'showTotalMark': self.showtotalmark,
 					'showAnswerState': self.showanswerstate,
 					'allowRevealAnswer': self.allowrevealanswer,
-					'adviceType': self.adviceType,
-					'adviceThreshold': self.adviceThreshold
 				},
 				'rulesets': { name: [rule.export() if isinstance(rule,SimplificationRule) else rule for rule in rules] for name,rules in self.rulesets.items() }
 			},
@@ -401,12 +402,12 @@ class JMEPart(Part):
 		else:	#dp or sigfig
 			part.checkingAccuracy = 5
 		#get checking accuracy from data, if defined
-		tryLoad(data,'checkingaccuracy',part)
+		tryLoad(data,'checkingAccuracy',part)
 
 		if 'maxlength' in data:
 			part.maxLength = Restriction.fromDATA('maxlength',data['maxlength'],part.maxLength)
 		if 'minlength' in data:
-			part.minLength = Restriction.fromDATA('minlength',data['minlength'],part.minLengt)
+			part.minLength = Restriction.fromDATA('minlength',data['minlength'],part.minLength)
 		if 'musthave' in data:
 			part.mustHave = Restriction.fromDATA('musthave',data['musthave'],part.mustHave)
 		if 'notallowed' in data:
@@ -549,7 +550,7 @@ class MultipleChoicePart(Part):
 	shuffleChoices = False
 	shuffleAnswers = False
 	displayType = 'radiogroup'
-	displayColumns = 0
+	displayColumns = 1
 	warningType = 'warn'
 	warningMessage = 'You have not selected the correct number of choices.'
 	

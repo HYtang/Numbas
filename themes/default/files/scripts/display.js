@@ -18,6 +18,8 @@ Copyright 2011 Newcastle University
 
 Numbas.queueScript('scripts/display.js',['controls','math','util','timing','jme','jme-display'],function() {
 
+	var MathJaxQueue = MathJax.Callback.Queue(MathJax.Hub.Register.StartupHook('End',{}));
+
 	var util = Numbas.util;
 
 
@@ -126,10 +128,9 @@ var display = Numbas.display = {
 	{
 		try
 		{
-			var queue = MathJax.Callback.Queue(MathJax.Hub.Register.StartupHook('End',{}));
-			queue.Push(['Typeset',MathJax.Hub,elem]);
+			MathJaxQueue.Push(['Typeset',MathJax.Hub,elem]);
 			if(callback)
-				queue.Push(callback);
+				MathJaxQueue.Push(callback);
 		}
 		catch(e)
 		{
@@ -189,6 +190,11 @@ display.ExamDisplay = function(e)
 	//register 'submit question' button
 	$('*').find('#submitBtn').click( Numbas.controls.submitQuestion );
 	
+	//register 'try another question like this one' button
+	if(e.allowRegen)
+		$('*').find('#regenBtn').click( Numbas.controls.regenQuestion );
+	else
+		$('*').find('#regenBtn').hide();
 
 	if(Numbas.store)
 	{
@@ -310,7 +316,8 @@ display.ExamDisplay.prototype =
 			$('#infoDisplay').getTransform(Numbas.xml.templates.suspend,exam.xmlize());
 		
 			$('#resumeBtn').click( Numbas.controls.resumeExam );
-			$('#endBtn').click( Numbas.controls.endExam );
+
+			Numbas.exam.display.showScore();
 
 			break;
 		
@@ -331,6 +338,14 @@ display.ExamDisplay.prototype =
 			display.carouselGo = makeCarousel($('.questionList'),{step: 2, nextBtn: '.questionMenu .next', prevBtn: '.questionMenu .prev'});
 			this.madeCarousel = true;
 		}
+	},
+
+	startRegen: function() {
+		$('#questionDisplay').hide();
+	},
+	
+	endRegen: function() {
+		$('#questionDisplay').fadeIn(200);
 	}
 };
 
@@ -338,9 +353,6 @@ display.ExamDisplay.prototype =
 display.QuestionDisplay = function(q)
 {
 	this.q = q;
-
-	//make html for question and advice text
-	//this.html = $.xsl.transform(Numbas.xml.templates.question, q.xml).string;
 
 	//make question selector for menu
 	var qs = $('#questionSelector').clone();
@@ -378,6 +390,9 @@ display.QuestionDisplay.prototype =
 
 		//hides the info page, if visible
 		$('#infoDisplay').hide();
+
+		//display the question container - content and nav bars
+		$('#questionContainer').show();
 		
 		//update the question menu - highlight this question, etc.
 		exam.display.updateQuestionMenu();
@@ -386,9 +401,6 @@ display.QuestionDisplay.prototype =
 		$('#submitBtn').removeAttr('disabled');
 		//show the reveal button
 		$('#revealBtn').show().removeAttr('disabled');
-
-		//display the question container - content and nav bars
-		$('#questionContainer').show();
 
 		//display question's html
 		
@@ -421,6 +433,9 @@ display.QuestionDisplay.prototype =
 		//display advice if appropriate
 		this.showAdvice();
 
+		// make mathjax process the question text (render the maths)
+		Numbas.display.typeset($('#questionDisplay')[0],this.postTypesetF);
+
 		//show/hide reveal answer button
 		if(exam.allowRevealAnswer)
 			$('#revealBtn').show();
@@ -433,9 +448,6 @@ display.QuestionDisplay.prototype =
 		//display score if appropriate
 		this.showScore();
 		
-		// make mathjax process the question text (render the maths)
-		Numbas.display.typeset(null,this.postTypesetF);
-
 		//make input elements report when they get and lose focus
 		$('input')	.blur( function(e) { Numbas.display.inInput = false; } )
 					.focus( function(e) { Numbas.display.inInput = true; } );
@@ -494,6 +506,11 @@ display.QuestionDisplay.prototype =
 		$('#submitBtn').attr('disabled','true');
 		//hide reveal button
 		$('#revealBtn').hide();
+
+		for(var i=0;i<this.q.parts.length;i++)
+		{
+			this.q.parts[i].display.revealAnswer();
+		}
 	},
 
 	//display question score and answer state
@@ -512,8 +529,8 @@ display.QuestionDisplay.prototype =
 			{
 				$('.submitDiv > #score').show().html('Answer submitted').fadeOut(200).fadeIn(200);
 
-				if(!exam.showAnswerState)
-					$(this.questionSelector).find('#score').show().html('Submitted');
+			//	if(!exam.showAnswerState)
+			//		$(this.questionSelector).find('#score').show().html('Answered');
 
 				selector.find('#submitBtn').val('Submit again');
 			}
@@ -553,7 +570,7 @@ display.PartDisplay.prototype =
 
 	warning: function(warning)
 	{
-		$(this.warningDiv).show().find('.partwarning').append('<span>'+warning+'</span>');
+		$(this.warningDiv).show().find('.partwarning').append('<span>'+textile(warning.toString())+'</span>');
 		Numbas.display.typeset();
 	},
 
@@ -651,7 +668,7 @@ display.PartDisplay.prototype =
 
 		if(Numbas.exam.showAnswerState)
 		{
-			if(this.p.markingFeedback.length)
+			if(this.p.markingFeedback.length && !this.p.question.revealed)
 			{
 				var feedback = [];
 				var maxMarks = this.p.marks - (this.p.stepsShown ? this.p.settings.stepsPenalty : 0);
@@ -758,7 +775,7 @@ display.JMEPartDisplay.prototype =
 				if(pd.hasFocus || pd.showAnyway)
 				{
 					inputDiv.css('z-index',1)
-							.position({my: 'left top',at: 'left bottom', of: previewDiv, offset:'0 10', collision: 'none'})
+							.position({my: 'left top',at: 'right top', of: previewDiv, offset:'0 10', collision: 'none'})
 				}
 				else
 					inputDiv.css('z-index',-1);
@@ -1232,12 +1249,13 @@ var makeCarousel = Numbas.display.makeCarousel = function(elem,options) {
 
 		var lis = div.find('li');
 		var divHeight = div.height();
+		var maxI = 0;
 		for(var j=0;j<lis.length;j++)
 		{
 			var y = lis.eq(j).position().top - listOffset;
 			if(listHeight - y < divHeight)
 			{
-				var maxI = j;
+				maxI = j;
 				break;
 			}
 		}

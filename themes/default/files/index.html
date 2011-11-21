@@ -18,29 +18,32 @@ Copyright 2011 Newcastle University
 	<head>
 		<title>Numbas</title>
 
+		<meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+
 		<meta http-equiv="X-UA-Compatible" content="IE=8">
 
 		<!--JQuery scripts-->
-		<script type="text/javascript" src="scripts/jquery/jquery.js"></script>
-		<script type="text/javascript" src="scripts/jquery/jquery-ui.custom.min.js"></script>
-		<script type="text/javascript" src="scripts/jquery/jquery.mousewheel.js"></script>
-		<script type="text/javascript" src="scripts/jquery/jquery.impromptu.js"></script>
-		<script type="text/javascript" src="scripts/jquery/json2.js"></script>
+		<script charset="UTF-8" type="text/javascript" src="scripts/jquery/jquery.js"></script>
+		<script charset="UTF-8" type="text/javascript" src="scripts/jquery/jquery-ui.custom.min.js"></script>
+		<script charset="UTF-8" type="text/javascript" src="scripts/jquery/jquery.mousewheel.js"></script>
+		<script charset="UTF-8" type="text/javascript" src="scripts/jquery/jquery.impromptu.js"></script>
+		<script charset="UTF-8" type="text/javascript" src="scripts/jquery/json2.js"></script>
 
 		<!-- textile markup -->
-		<script type="text/javascript" src="scripts/textile/textile.js"></script>
+		<script charset="UTF-8" type="text/javascript" src="scripts/textile/textile.js"></script>
 
 		<!-- handlebars templating  -->
 		<script type="text/javascript" src="scripts/handlebars/handlebars.js"></script>
 
 		<!-- pipwerks SCORM wrapper -->
-		<script type="text/javascript" src="scripts/SCORM_API_wrapper.js"></script>
+		<script charset="UTF-8" type="text/javascript" src="scripts/SCORM_API_wrapper.js"></script>
 
 		<!-- numbas stuff -->
-		<script type="text/javascript" src="scripts/numbas.js" charset="utf-8"></script>
+		<script charset="UTF-8" type="text/javascript" src="scripts/numbas.js" charset="utf-8"></script>
 
 		<!-- mathjax stuff -->
-		<SCRIPT SRC="http://cdn.mathjax.org/mathjax/latest/MathJax.js">
+		<!--<SCRIPT SRC="https://d3eoax9i5htok0.cloudfront.net/mathjax/latest/MathJax.js">--><!-- HTTPS version of MathJax -->
+    	<SCRIPT SRC="http://cdn.mathjax.org/mathjax/latest/MathJax.js">
 		  MathJax.Hub.Config({
 			extensions: ['tex2jax.js',"MathMenu.js","TeX/AMSmath.js"],
 			tex2jax: {inlineMath: [["$","$"],["\\(","\\)"]]},
@@ -120,13 +123,13 @@ Copyright 2011 Newcastle University
 						<!-- stopwatch and timing controls -->
 						<div class="mainDiv timeBox">
 							<p id="stopWatch">Time remaining: 01:00:00</p>
-							<p>
-								<input class="btn" type="button" value="Pause" id="pauseBtn">
-							</p>
 						</div>
 
 						<!-- end exam button -->
-						<div class="menuEndBtn"><input class="btn" type="button" value="End Exam" id="endBtn"></div>
+						<div class="menuButtons">
+							<input class="btn" type="button" value="Pause" id="pauseBtn"><br/>
+							<input class="btn" type="button" value="End Exam" id="endBtn">
+						</div>
 					</div>
 				</div>
 				<!-- bottom nav bar - prv/nxt, plus submit/advice/reveal buttons -->
@@ -139,6 +142,7 @@ Copyright 2011 Newcastle University
 							<span id="score"></span>
 							<span id="feedback"><img src="resources/cross.png"/></span>
 						</div>
+						<input class="btn" type="button" value="Try another question like this one" id="regenBtn">
 					</div>
 				</div>
 			</div>

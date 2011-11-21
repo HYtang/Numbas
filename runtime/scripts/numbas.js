@@ -67,13 +67,11 @@ Numbas.showError = function(e)
 // - display the frontpage
 // This function is called when all the other scripts have been loaded and executed. 
 // It uses the scheduling system to make sure the browser isn't locked up when the exam is being initialised
-function init()
+var init = Numbas.init = function()
 {
 	var job = Numbas.schedule.add;
 
 	//job(function(){Numbas.timing.start()});			//start timing (for performance tuning)
-
-	job(Numbas.storage.startLMS);			//Initialise the LMS. In a bit, the LMS will tell us if there is a previous attempt that can be resumed
 
 	job(Numbas.display.loadTemplates);
 
@@ -101,17 +99,19 @@ function init()
 			break;
 
 		case 'resume':
-			job(exam.load);
+			job(exam.load,exam);
 			job(Numbas.display.init);
 
-			if(exam.currentQuestion !== undefined)
-			{
-				job(exam.display.showInfoPage,exam.display,'suspend');
-			}
-			else
-			{
-				job(exam.display.showInfoPage,exam.display,'frontpage');
-			}
+			job(function() {
+				if(exam.currentQuestion !== undefined)
+				{
+					job(exam.display.showInfoPage,exam.display,'suspend');
+				}
+				else
+				{
+					job(exam.display.showInfoPage,exam.display,'frontpage');
+				}
+			});
 
 			break;
 		}
@@ -155,8 +155,8 @@ var loadScript = Numbas.loadScript = function(file,noreq)
 
 	var script = document.createElement("script");
 	script.type = "text/javascript";
-	script.src = file;
 	script.charset="utf-8";
+	script.src = file;
 	$('head').append(script);
 }
 
@@ -240,7 +240,7 @@ function tryInit()
 			}
 		}
 	}
-	init();
+	Numbas.init();
 }
 
 $(document).ready(function() {
