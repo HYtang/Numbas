@@ -291,7 +291,7 @@ class Variable:
 	
 class Function:
 	name = ''
-	type = ''
+	outtype = ''
 	definition = ''
 
 	def __init__(self,name):
@@ -301,14 +301,14 @@ class Function:
 	@staticmethod
 	def fromDATA(name,data):
 		function = Function(name)
-		tryLoad(data,['parameters','type','definition'],function)
+		tryLoad(data,['parameters','outtype','definition'],function)
 		return function
 	
 	def export(self):
 		return {
-			'type': self.type,
+			'outtype': self.outtype,
 			'definition': self.definition,
-			'parameters': [{"name": x[0], "type": x[1]} for x in self.parameters]
+			'parameters': [{"name":x[0], "type":x[1]} for x in self.parameters]
 		}
 
 class Part:

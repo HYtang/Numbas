@@ -222,7 +222,7 @@ var jme = Numbas.jme = {
 
 				if( ! stack.length )
 				{
-					throw(new Error("no matching left bracket in function"));
+					throw(new Error("No matching left bracket in function, or comma in the wrong place."));
 				}
 				break;
 				
@@ -396,7 +396,7 @@ var jme = Numbas.jme = {
 
 	evaluate: function(tree,variables,functions)
 	{
-		if( typeof(tree)=='string' )
+		if( typeof(tree)=='string' || typeof(tree) == 'number')
 			tree = jme.compile(tree,functions);
 
 		if(variables===undefined)
@@ -709,6 +709,7 @@ var jme = Numbas.jme = {
 	//anything enclosed in double-curly braces is not touched (useful for things like embedded javascript)
 	subvars: function(str, variables,functions,display)
 	{
+		str = str.toString();
 		var out = '';
 		var nbits = splitbrackets(str,'{{','}}');
 		for(var j=0;j<nbits.length;j++)

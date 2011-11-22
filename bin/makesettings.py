@@ -29,7 +29,7 @@ def makesettings(options):
 	allHBS = []
 	files = filter(lambda x: x[-4:]=='.hbs', os.listdir(themedir))
 	for x in files:
-		s = x[:-4]+': \"'+encodeHandlebars(open(os.path.join(themedir,x),encoding='utf-8').read())+'\"'
+		s = "'"+x[:-4]+"'"+': \"'+encodeHandlebars(open(os.path.join(themedir,x),encoding='utf-8').read())+'\"'
 		allHBS.append(s)
 
 #include javascript files to go with extensions
