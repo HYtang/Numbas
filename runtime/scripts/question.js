@@ -1181,6 +1181,175 @@ NumberEntryPart.prototype =
 NumberEntryPart.prototype.subvars = util.extend(Part.prototype.subvars,NumberEntryPart.prototype.subvars);
 
 
+function ChooseOnePart(json, path, question, parentPart, loading)
+{
+	var settings = this.settings;
+	util.copyinto(ChooseOnePart.prototype.settings,settings);
+
+	['shuffleChoices','displayType'].map(Numbas.json.tryLoad('',settings,json));
+
+	this.numChoices = json.answers.length;
+
+	if(loading)
+	{
+		var pobj = Numbas.store.loadPart(this);
+		this.choiceOrder = pobj.choiceOrder;
+	}
+	else
+	{
+		this.choiceOrder = (settings.shuffleChoices ? math.deal : math.range)(this.numChoices);
+	}
+
+	//load answers and choices in right order
+	var choices = this.settings.rawchoices = [];
+	this.choices = new Array(this.numChoices);
+	for(var i=0;i<this.numChoices;i++)
+	{
+		choices.push(json.choices[this.choiceOrder[i]]);
+	}
+
+	//invert the shuffle so we can now tell where particular choices/answers went
+	this.choiceOrder = math.inverse(this.choiceOrder);
+
+	//fill marks matrix and load distractor messages
+	var matrixTotal = 0;
+	var matrix = settings.matrix = [];
+	var rawmatrix = this.settings.rawmatrix = [];
+	var distractors = settings.distractors = [];
+	var rawdistractors = this.settings.rawdistractors = [];
+	for( var i=0; i<this.numChoices; i++ )
+	{
+		var value = jme.evaluate(jme.subvars(json.matrix[i],this.question.variables,this.question.functions),this.question.variables,this.question.functions);
+		matrixTotal += value;
+
+		//take into account shuffling
+		var ii = this.choiceOrder[i];
+
+		rawmatrix[ii] = json.matrix[i];
+
+		rawdistractors[ii] = json.distractors[i];
+	}
+	
+	if(this.marks == 0)
+		this.marks = matrixTotal;
+
+	//restore saved choices
+	if(loading)
+	{
+		for(i=0;i<this.numChoices;i++)
+		{
+			this.stagedAnswer = pobj.studentAnswer;
+		}
+		if(this.answered)
+			this.submit();
+	}
+
+	this.display = new Numbas.display.ChooseOnePartDisplay(this);
+}
+ChooseOnePart.prototype =
+{
+	ticks: [],						//store student's responses here - array to say if each response has been selected or not
+	wrongNumber: false,				//has student given the wrong number of responses?
+
+	settings:
+	{
+		minMarks: 0,				//minimum number of marks student can be awarded
+		shuffleChoices: false,		//randomise order of choices?
+		matrix: [],					//marks matrix
+		displayType: '',			//how to display the responses? can be: radiogroup, dropdownlist, buttonimage, checkbox, choicecontent
+		numChoices: 0,				//number of choices
+		warningType: '',			//what to do if wrong number of responses
+		warningMessage: ''			//message to display if wrong number of responses
+	},
+
+	subvars: function() {
+		var variables = this.question.variables;
+		var functions = this.question.functions;
+		for(var i=0;i<this.settings.rawmatrix.length;i++)
+		{
+			this.settings.matrix[i] = jme.evaluate(jme.subvars(this.settings.rawmatrix[i],variables,functions), variables,functions);
+			this.settings.distractors[i] = jme.subvars(this.settings.rawdistractors[i],variables,functions);
+		}
+		for(var i=0;i<this.numChoices;i++)
+			this.choices[i] = jme.subvars(this.settings.rawchoices[i],variables,functions);
+	},
+
+	storeAnswer: function(answerList)
+	{
+		//get choice and answer 
+		//in MR1_n_2 and MRm_n_2 parts, only the choiceindex matters
+		var choiceIndex = answerList[0];
+
+		for(var i=0; i<this.numChoices; i++)
+		{
+			this.stagedAnswer[i]= (i==choiceIndex);
+		}
+	},
+
+	mark: function()
+	{
+		if(this.stagedAnswer==undefined)
+		{
+			this.setCredit(0,'You did not answer this part.');
+			return false;
+		}
+		this.ticks = util.copyarray(this.stagedAnswer);
+		this.setCredit(0);
+
+		this.numTicks = 0;
+		var partScore = 0;
+		for( i=0; i<this.numAnswers; i++ )
+		{
+			for(var j=0; j<this.numChoices; j++ )
+			{
+				if(this.ticks[i][j])
+				{
+					partScore += this.settings.matrix[i][j];
+					this.numTicks += 1;
+
+					if((row = this.settings.distractors[i]) && (message=row[j]))
+						this.addCredit(this.settings.matrix[i][j]/this.marks,message);
+				}
+			}
+		}
+
+		this.wrongNumber = (this.numTicks<this.settings.minAnswers || (this.numTicks>this.settings.maxAnswers && this.settings.maxAnswers>0));
+
+		if(this.marks>0 && !this.wrongNumber)
+		{
+			partScore = Math.min(Math.max(partScore,this.minMarks),this.marks); //this part might have a maximum number of marks which is less then the sum of the marking matrix
+			this.setCredit(partScore/this.marks);	
+		}
+		else
+			this.setCredit(0,'You selected the wrong number of choices.');
+	},
+
+	validate: function()
+	{
+		if(this.wrongNumber)
+		{
+			switch(this.settings.warningType)
+			{
+			case 'prevent':
+				this.giveWarning(this.settings.warningMessage);
+				return false;
+				break;
+			case 'warn':
+				this.giveWarning(this.settings.warningMessage);
+				break;
+			}
+		}
+
+		if(this.numTicks>0)
+			return true;
+		else
+			this.giveWarning('No choices selected.');
+			return false;
+	}
+};
+ChooseOnePart.prototype.subvars = util.extend(Part.prototype.subvars,ChooseOnePart.prototype.subvars);
+
+
 function MultipleResponsePart(json, path, question, parentPart, loading)
 {
 	var settings = this.settings;

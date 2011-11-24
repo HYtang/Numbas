@@ -17,7 +17,7 @@ import re
 import sys
 
 def encodeHandlebars(hbs):
-	hbs = re.sub('\n(?!$)',r'\\n',hbs)
+	hbs = re.sub('\n(?!$)',r'',hbs)
 	hbs = re.sub('"',r'\"',hbs)
 	return hbs.strip()
 

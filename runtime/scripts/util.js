@@ -42,10 +42,19 @@ var util = Numbas.util = {
 			for(x in a.prototype)
 			{
 				if(typeof(a.prototype[x])=='function' && b.prototype[x])
-					c.prototype[x]=Numbas.util.extend(a.prototype[x],b.prototype[x]);
+					c.prototype[x]=Numbas.util.extendMethod(a.prototype[x],b.prototype[x]);
 			}
 		}
 
+		return c;
+	},
+
+	extendMethod: function(a,b)
+	{
+		var c = function() {
+			a.apply(this,arguments);
+			return b.apply(this,arguments);
+		}
 		return c;
 	},
 

@@ -589,7 +589,7 @@ display.PartDisplay.prototype =
 
 	answerContext: function()
 	{
-		return this.htmlContext().find('#answer-'+this.p.path);
+		return this.htmlContext().find('#answer:first');
 	},
 
 	//produce HTML representing this part
@@ -993,7 +993,7 @@ display.MultipleResponsePartDisplay.prototype =
 			{
 				for(var j=0; j<p.numChoices; j++)
 				{
-					c.find('#choice-'+j+'-'+i).change(makeClicker(i,j));
+					c.find('#choice').eq(j*p.numAnswers+i).change(makeClicker(i,j));
 				}
 			}
 		}
