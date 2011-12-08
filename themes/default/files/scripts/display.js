@@ -962,6 +962,79 @@ display.NumberEntryPartDisplay.prototype =
 display.NumberEntryPartDisplay = extend(display.PartDisplay,display.NumberEntryPartDisplay,true);
 
 
+//choose one from a list (1_n_2) display code
+display.ChooseOnePartDisplay = function()
+{
+}
+display.ChooseOnePartDisplay.prototype =
+{
+	show: function()
+	{
+		var p = this.p;
+		var c = this.htmlContext();
+
+		function makeClicker(choice)
+		{
+			return function() {
+				p.storeAnswer([choice]);
+			};
+		}
+
+		switch(p.settings.displayType)
+		{
+		case 'dropdownlist':
+			c.find('.multiplechoice').bind('change',function() {
+				var i = $(this).find('option:selected').index();
+				p.storeAnswer([i-1]);
+			});
+			break;
+		default:
+			for(var i=0; i<p.numChoices; i++)
+			{
+				c.find('#choice').eq(i).change(makeClicker(i));
+			}
+		}
+	},
+	restoreAnswer: function()
+	{
+		var c = this.htmlContext();
+		for(var i=0; i<this.p.numChoices; i++)
+		{
+			c.find('#choice').eq(i).prop('checked',this.p.choice == i);
+		}
+	},
+
+	revealAnswer: function()
+	{
+		switch(this.p.settings.displayType)
+		{
+		case 'dropdownlist':
+			var bigscore=0;
+			for(var i=0;i<this.p.numChoices;i++)
+			{
+				if(this.p.settings.matrix[i] > bigscore)
+				{
+					bigscore = this.p.settings.matrix[i];
+					this.answerContext().find('option').eq(i).attr('selected','true');
+				}
+			}
+			break;
+		default:
+			//tick a response if it has positive marks
+			var c = this.answerContext();
+			for(var i=0; i<this.p.numChoices; i++)
+			{
+				c.find('#choice').eq(i)
+					.attr('disabled',true)
+					.prop('checked',this.p.settings.matrix[i]>0);
+			}
+			break;
+		}
+	}
+};
+display.ChooseOnePartDisplay = extend(display.PartDisplay,display.ChooseOnePartDisplay,true);
+
+
 //Multiple Response display code
 display.MultipleResponsePartDisplay = function()
 {

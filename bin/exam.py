@@ -330,7 +330,7 @@ class Part:
 				'jme': JMEPart,
 				'numberentry': NumberEntryPart,
 				'patternmatch': PatternMatchPart,
-				'1_n_2': MultipleChoicePart,
+				'1_n_2': ChooseOnePart,
 				'm_n_2': MultipleChoicePart,
 				'm_n_x': MultipleChoicePart,
 				'gapfill': GapFillPart,
@@ -537,6 +537,57 @@ class NumberEntryPart(Part):
 				'integerAnswer': self.integerAnswer,
 				'partialCredit': self.partialCredit
 			}
+		})
+		return obj
+
+class ChooseOnePart(Part):
+	minMarksEnabled = False
+	minMarks = 0
+	maxMarksEnabled = False
+	maxMarks = 0
+	shuffleChoices = False
+	displayType = 'radiogroup'
+	displayColumns = 1
+	
+	def __init__(self,kind,marks=0,prompt=''):
+		self.kind = kind
+		Part.__init__(self,marks,prompt)
+
+		self.choices = []
+		self.matrix = []
+
+		self.distractors = []
+
+	@staticmethod
+	def fromDATA(data):
+		kind = data['type']
+		part = ChooseOnePart(kind)
+
+		tryLoad(data,['minMarks','maxMarks','shuffleChoices','displayType','displayColumns'],part)
+
+		if 'choices' in data:
+			for choice in data['choices']:
+				part.choices.append(choice)
+
+		if 'matrix' in data:
+			part.matrix = data['matrix']
+
+		if 'distractors' in data:
+			part.distractors = data['distractors']
+
+		return part
+
+	def export(self):
+		obj = super(ChooseOnePart,self).export()
+		obj.update({
+			'minMarks': self.minMarks,
+			'maxMarks': self.maxMarks,
+			'shuffleChoices': self.shuffleChoices,
+			'displayType': self.displayType,
+			'displayColumns': self.displayColumns,
+			'choices': self.choices,
+			'matrix': self.matrix,
+			'distractors': self.distractors
 		})
 		return obj
 
