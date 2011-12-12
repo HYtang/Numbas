@@ -34,6 +34,7 @@ var Exam = Numbas.Exam = function()
 	};
 
 	['name','duration','percentPass','allQuestions','selectQuestions','shuffleQuestions'].map(tryLoad());
+	this.rawname = this.name;
 
 	this.navigation = Numbas.util.copyobj(this.navigation);
 	['allowregen','reverse','browse','showFrontPage'].map(tryLoad('settings.navigation',this.navigation));
@@ -158,10 +159,17 @@ Exam.prototype = {
 		job(function() {
 			exam.functions = Numbas.jme.variables.makeFunctions(exam.json.functions);
 			exam.variables = Numbas.jme.variables.makeVariables(exam.json.variables,exam.functions);
+			exam.subvars();
 		});
 		job(exam.chooseQuestionSubset,exam);			//choose questions to use
 		job(exam.makeQuestionList,exam);				//create question objects
 		job(Numbas.store.init,Numbas.store,exam);		//initialise storage
+	},
+
+	subvars: function()
+	{
+		this.name = Numbas.jme.contentsubvars(this.rawname,this.variables,this.functions);
+		this.display.subvars();
 	},
 
 	//restore previously started exam from storage

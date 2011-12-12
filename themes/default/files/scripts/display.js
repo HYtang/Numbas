@@ -80,8 +80,6 @@ var display = Numbas.display = {
 	//display code to be called before anything else has happened
 	init: function()
 	{
-		document.title = Numbas.exam.name;
-
 		//hide the various content-display bits
 		$('.mainDisplay > *').hide();
 		//show the page;
@@ -212,6 +210,14 @@ display.ExamDisplay = function(e)
 display.ExamDisplay.prototype = 
 {
 	e:undefined,	//reference to main exam object
+
+	subvars: function()
+	{
+		var e = this.e;
+		//display exam title at top of page
+		$('#examBanner').html(e.name);
+		document.title = e.name;
+	},
 
 	showTiming: function()
 	{
