@@ -1186,7 +1186,7 @@ function ChooseOnePart(json, path, question, parentPart, loading)
 	var settings = this.settings;
 	util.copyinto(ChooseOnePart.prototype.settings,settings);
 
-	['shuffleChoices','displayType'].map(Numbas.json.tryLoad('',settings,json));
+	['minChoices','maxChoices','shuffleChoices','displayType'].map(Numbas.json.tryLoad('',settings,json));
 
 	this.numChoices = json.choices.length;
 
@@ -1249,6 +1249,8 @@ ChooseOnePart.prototype =
 
 	settings:
 	{
+		minChoices: undefined,
+		maxChoices: undefined,
 		shuffleChoices: false,		//randomise order of choices?
 		matrix: [],					//marks matrix
 		displayType: '',			//how to display the responses? can be: radiogroup, dropdownlist, buttonimage, checkbox, choicecontent
@@ -1276,10 +1278,34 @@ ChooseOnePart.prototype =
 			this.setCredit(0,'You did not answer this part.');
 			return false;
 		}
-		this.choice = this.stagedAnswer[0];
 		this.setCredit(0);
 
-		var partScore = this.settings.matrix[this.choice];
+		this.numTicks = 0;
+		var partScore = 0;
+		for( i=0; i<this.numAnswers; i++ )
+		{
+			for(var j=0; j<this.numChoices; j++ )
+			{
+				if(this.ticks[i][j])
+				{
+					partScore += this.settings.matrix[i][j];
+					this.numTicks += 1;
+
+					if((row = this.settings.distractors[i]) && (message=row[j]))
+						this.addCredit(this.settings.matrix[i][j]/this.marks,message);
+				}
+			}
+		}
+		if(this.numTicks<this.settings.minChoices)
+		{
+			this.setCredit(0,'You have not selected enough choices. You need to select at least '+this.settings.minChoices+' choices');
+			return false;
+		}
+		else if(this.numTicks>this.settings.maxChoices)
+		{
+			this.setCredit(0,'You have selected too many choices. You may select at most '+this.settings.maxChoices+' choices');
+			return false;
+		}
 
 		this.setCredit(partScore/this.marks,this.settings.distractors[this.choice]);	
 	},
