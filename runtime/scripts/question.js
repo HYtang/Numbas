@@ -1186,7 +1186,7 @@ function ChooseOnePart(json, path, question, parentPart, loading)
 	var settings = this.settings;
 	util.copyinto(ChooseOnePart.prototype.settings,settings);
 
-	['minChoices','maxChoices','shuffleChoices','displayType'].map(Numbas.json.tryLoad('',settings,json));
+	['shuffleChoices','displayType'].map(Numbas.json.tryLoad('',settings,json));
 
 	this.numChoices = json.choices.length;
 
@@ -1244,19 +1244,12 @@ function ChooseOnePart(json, path, question, parentPart, loading)
 }
 ChooseOnePart.prototype =
 {
-	ticks: [],						//store student's responses here - array to say if each response has been selected or not
-	wrongNumber: false,				//has student given the wrong number of responses?
-
 	settings:
 	{
-		minChoices: undefined,
-		maxChoices: undefined,
 		shuffleChoices: false,		//randomise order of choices?
 		matrix: [],					//marks matrix
 		displayType: '',			//how to display the responses? can be: radiogroup, dropdownlist, buttonimage, checkbox, choicecontent
 		numChoices: 0,				//number of choices
-		warningType: '',			//what to do if wrong number of responses
-		warningMessage: ''			//message to display if wrong number of responses
 	},
 
 	subvars: function() {
@@ -1278,35 +1271,10 @@ ChooseOnePart.prototype =
 			this.setCredit(0,'You did not answer this part.');
 			return false;
 		}
+		this.choice = this.stagedAnswer[0];
 		this.setCredit(0);
 
-		this.numTicks = 0;
-		var partScore = 0;
-		for( i=0; i<this.numAnswers; i++ )
-		{
-			for(var j=0; j<this.numChoices; j++ )
-			{
-				if(this.ticks[i][j])
-				{
-					partScore += this.settings.matrix[i][j];
-					this.numTicks += 1;
-
-					if((row = this.settings.distractors[i]) && (message=row[j]))
-						this.addCredit(this.settings.matrix[i][j]/this.marks,message);
-				}
-			}
-		}
-		if(this.numTicks<this.settings.minChoices)
-		{
-			this.setCredit(0,'You have not selected enough choices. You need to select at least '+this.settings.minChoices+' choices');
-			return false;
-		}
-		else if(this.numTicks>this.settings.maxChoices)
-		{
-			this.setCredit(0,'You have selected too many choices. You may select at most '+this.settings.maxChoices+' choices');
-			return false;
-		}
-
+		var partScore = this.settings.matrix[this.choice]/this.marks;
 		this.setCredit(partScore/this.marks,this.settings.distractors[this.choice]);	
 	},
 
@@ -1329,7 +1297,7 @@ function ChooseSeveralPart(json, path, question, parentPart, loading)
 	var settings = this.settings;
 	util.copyinto(ChooseSeveralPart.prototype.settings,settings);
 
-	['shuffleChoices','displayType'].map(Numbas.json.tryLoad('',settings,json));
+	['minTicks','maxTicks','warningType','warningMessage','shuffleChoices'].map(Numbas.json.tryLoad('',settings,json));
 
 	this.numChoices = json.choices.length;
 
@@ -1363,7 +1331,7 @@ function ChooseSeveralPart(json, path, question, parentPart, loading)
 	for( var i=0; i<this.numChoices; i++ )
 	{
 		var value = jme.evaluate(jme.subvars(json.matrix[i],this.question.variables,this.question.functions),this.question.variables,this.question.functions).value;
-		toal += Math.max(value,0);
+		total += Math.max(value,0);
 
 		//take into account shuffling
 		var ii = this.choiceOrder[i];
@@ -1398,11 +1366,12 @@ ChooseSeveralPart.prototype =
 
 	settings:
 	{
+		minTicks: undefined,
+		maxTicks: undefined,
 		shuffleChoices: false,		//randomise order of choices?
 		matrix: [],					//marks matrix
-		displayType: '',			//how to display the responses? can be: radiogroup, dropdownlist, buttonimage, checkbox, choicecontent
 		numChoices: 0,				//number of choices
-		warningType: '',			//what to do if wrong number of responses
+		warningType: 'warn',		//what to do if wrong number of responses
 		warningMessage: ''			//message to display if wrong number of responses
 	},
 
@@ -1430,17 +1399,58 @@ ChooseSeveralPart.prototype =
 			this.setCredit(0,'You did not answer this part.');
 			return false;
 		}
-		this.choice = this.stagedAnswer[0];
+
+		this.ticks = util.copyarray(this.stagedAnswer);
+
+		var partScore = 0;
+		this.numTicks = 0;
 		this.setCredit(0);
 
-		var partScore = this.settings.matrix[this.choice];
+		for(var i=0;i<this.settings.matrix.length;i++)
+		{
+			if(this.ticks[i])
+			{
+				partScore += this.settings.matrix[i];
+				this.numTicks++;
+			}
+		}
 
-		this.setCredit(partScore/this.marks,this.settings.distractors[this.choice]);	
+		this.wrongNumber = (this.numTicks<this.settings.minTicks || (this.numTicks>this.settings.maxTicks && this.settings.maxTicks>0));
+
+		if(this.wrongNumber)
+		{
+			this.setCredit(0,this.settings.warningMessage);
+		}
+		else
+		{
+			for(var i=0;i<this.settings.matrix.length;i++)
+			{
+				if(this.ticks[i])
+				{
+					if(this.settings.distractors[i])
+						this.addCredit(this.settings.matrix[i]/this.marks,this.settings.distractors[i]);
+				}
+			}
+			this.setCredit(partScore/this.marks);	
+		}
 	},
 
 	validate: function()
 	{
-		if(this.choice!==undefined)
+		if(this.wrongNumber)
+		{
+			switch(this.settings.warningType)
+			{
+			case 'prevent':
+				this.giveWarning(this.settings.warningMessage);
+				return false;
+				break;
+			case 'warn':
+				this.giveWarning(this.settings.warningMessage);
+				break;
+			}
+		}
+		if(this.numTicks>0)
 			return true;
 		else
 		{

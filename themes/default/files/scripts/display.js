@@ -1035,6 +1035,53 @@ display.ChooseOnePartDisplay.prototype =
 display.ChooseOnePartDisplay = extend(display.PartDisplay,display.ChooseOnePartDisplay,true);
 
 
+//choose several from a list (m_n_2) display code
+display.ChooseSeveralPartDisplay = function()
+{
+}
+display.ChooseSeveralPartDisplay.prototype =
+{
+	show: function()
+	{
+		var p = this.p;
+		var c = this.htmlContext();
+
+		function makeClicker(choice)
+		{
+			return function() {
+				p.storeAnswer([choice,$(this).prop('checked')]);
+			};
+		}
+
+		for(var i=0; i<p.numChoices; i++)
+		{
+			c.find('#choice').eq(i).change(makeClicker(i));
+		}
+	},
+	restoreAnswer: function()
+	{
+		var c = this.htmlContext();
+		for(var i=0; i<this.p.numChoices; i++)
+		{
+			c.find('#choice').eq(i).prop('checked',this.p.ticks[i]);
+		}
+	},
+
+	revealAnswer: function()
+	{
+		//tick a response if it has positive marks
+		var c = this.answerContext();
+		for(var i=0; i<this.p.numChoices; i++)
+		{
+			c.find('#choice').eq(i)
+				.attr('disabled',true)
+				.prop('checked',this.p.settings.matrix[i]>0);
+		}
+	}
+};
+display.ChooseSeveralPartDisplay = extend(display.PartDisplay,display.ChooseSeveralPartDisplay,true);
+
+
 //Multiple Response display code
 display.MultipleResponsePartDisplay = function()
 {
