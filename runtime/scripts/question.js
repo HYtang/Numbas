@@ -172,24 +172,8 @@ Question.prototype =
 		q.xml = doc.selectSingleNode('question');
 		q.xml.setAttribute('number',q.number);
 
-		job(function()
-		{
-			//substitute variables into content nodes
-			var serializer = new XMLSerializer();
-			var parser = new DOMParser();
-			var contents = q.xml.selectNodes('descendant::content');
-
-			//filter to get non-whitespace text nodes 
-			function tnf(){ return ((this.nodeType == Node.TEXT_NODE) && !(/^\s*$/.test(this.nodeValue))); }
-
-			//do contentsubvars on all content
-			for(var i=0;i<contents.length;i++)
-			{
-				jme.variables.DOMcontentsubvars(contents[i],q.scope);
-			}
-
-
-		});
+		q.statement = jme.variables.subcontent(q.xml,'statement',q.scope);
+		q.advice = jme.variables.subcontent(q.xml,'advice',q.scope);
 
 		job(function() {
 			//sub vars into math nodes
@@ -403,6 +387,8 @@ function Part( xml, path, question, parentPart, loading )
 	tryGetAttribute(this,'.',['type','marks']);
 
 	tryGetAttribute(this.settings,'.',['minimumMarks','enableMinimumMarks','stepsPenalty'],[],{xml: this.xml});
+
+	this.prompt = jme.variables.subcontent(this.xml,'prompt',this.question.scope);
 
 	//initialise gap and step arrays
 	this.gaps = [];

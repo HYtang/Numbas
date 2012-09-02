@@ -49,16 +49,15 @@ Copyright 2011 Newcastle University
 		<script charset="UTF-8" type="text/javascript" src="scripts/start-exam.js" charset="utf-8"></script>
 
 		<!-- mathjax stuff -->
-    <!--<SCRIPT SRC="http://cdn.mathjax.org/mathjax/latest/MathJax.js">-->
-   <!-- <SCRIPT SRC="https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js">
-		  MathJax.Hub.Config({
-			extensions: ['tex2jax.js',"MathMenu.js","TeX/AMSmath.js"],
-			tex2jax: {inlineMath: [["$","$"],["\\(","\\)"]]},
-			jax: ["input/TeX","output/HTML-CSS"],
-			displayAlign: "center",
-			displayIndent: "0.1em"
-		  });
-	  </SCRIPT> -->
+		<script type="text/x-mathjax-config">
+			MathJax.Hub.Config({
+				tex2jax: {
+					inlineMath: [['$','$']], 
+					displayMath: [['\\[','\\]']]
+				}
+			});
+		</script>
+		<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
 
 		<!-- CSS -->
@@ -71,11 +70,6 @@ Copyright 2011 Newcastle University
 
 		<script type="text/html" id="frontpage-template">
 			<table data-bind="with: exam">
-				<tr>
-					<td>Exam Name:</td>
-					<td class="rtd" data-bind="text: name">
-					</td>
-				</tr>
 				<tr>
 					<td>Number of Questions:</td>
 					<td class="rtd" data-bind="text: questions().length">
@@ -144,8 +138,28 @@ Copyright 2011 Newcastle University
 
 						<!-- question and advice go in here -->
 						<div class="col1wrap">
-							<div id="questionDisplay" class="question clearAfter" data-bind="with: exam.currentQuestion">
-								<div class="statement" data-bind="html: statement"></div>
+							<div id="questionDisplay" class="question clearAfter" data-bind="with: exam.currentQuestion, mathjax: true">
+								<div class="statement content" data-bind="append: statement"></div>
+
+								<ol class="parts" data-bind="foreach: parts">
+									<li class="part" data-bind="attr:{id: path}">
+										<span class="prompt content" data-bind="append: prompt"></span>
+										<div id="partFeedback">
+											<button id="submitPart">Submit part</button>
+											<div id="marks">
+												<span id="score"></span>
+												<span id="feedback"><img src="resources/cross.png"/></span>
+											</div>
+											<button id="feedbackToggle"></button>
+										</div>
+										<div id="feedbackMessage"></div>
+									</li>
+								</ol>
+
+								<div class="advice content">
+									<h3>Advice</h3>
+									<div data-bind="append: advice"></div>
+								</div>
 							</div>
 						</div>
 

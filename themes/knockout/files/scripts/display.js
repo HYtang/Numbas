@@ -30,6 +30,19 @@ ko.bindingHandlers.fadeVisible = {
 	}
 };
 
+ko.bindingHandlers.append = {
+	update: function(element,valueAccessor) {
+		var value = ko.utils.unwrapObservable(valueAccessor());
+		$(element).html('').append(value);
+	}
+};
+
+ko.bindingHandlers.mathjax = {
+	update: function(element) {
+		MathJax.Hub.Queue(['Typeset',MathJax.Hub,element]);
+	}
+}
+
 var display = Numbas.display = {
 	// update progress bar when loading
 	showLoadProgress: function()
@@ -194,9 +207,14 @@ display.QuestionDisplay = function(q)
 
 	this.parts = ko.observableArray([]);
 
+	this.statement = ko.observable('');
+	this.advice = ko.observable('');
+
 	this.canReveal = ko.computed(function() {
 		return q.exam.allowRevealAnswer && !qd.revealed();
 	});
+
+	this.parts = ko.observableArray([]);
 }
 display.QuestionDisplay.prototype =
 {
@@ -207,6 +225,9 @@ display.QuestionDisplay.prototype =
 	makeHTML: function() {
 		//make html for question and advice text
 		//this.html = $.xsl.transform(Numbas.xml.templates.question, this.q.xml).string;
+		this.statement(this.q.statement);
+		this.advice(this.q.advice);
+		this.parts(this.q.parts.map(function(p){ return p.display; }));
 	},
 
 	show: function()
@@ -247,6 +268,9 @@ var extend = Numbas.util.extend;
 display.PartDisplay = function(p)
 {
 	this.p = p;
+
+	this.path = ko.observable(p.path);
+	this.prompt = ko.observable(p.prompt);
 }
 display.PartDisplay.prototype = 
 {

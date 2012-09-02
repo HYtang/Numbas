@@ -224,6 +224,15 @@ jme.variables = {
 		return scope.variables;
 	},
 
+	subcontent: function(xml,path,scope) {
+		if(path)
+			xml = xml.selectSingleNode(path);
+		xml=xml.selectSingleNode('content');
+		var element = $(xml).clone();
+		jme.variables.DOMcontentsubvars(element,scope);
+		return element;
+	},
+
 	DOMcontentsubvars: function(element, scope) {
 		$(element).contents().each(function() {
 			if(this.nodeType==this.TEXT_NODE) {
