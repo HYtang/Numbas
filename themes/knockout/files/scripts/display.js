@@ -43,6 +43,23 @@ ko.bindingHandlers.mathjax = {
 	}
 }
 
+ko.bindingHandlers.localise = {
+	update: function(element,valueAccessor) {
+		var value = ko.utils.unwrapObservable(valueAccessor());
+		var text;
+		console.log(value);
+		if(typeof value == 'object') {
+			var str = value.str;
+			var args = value.args;
+			text = R.apply(str,args);
+		}
+		else
+			text = R(value);
+
+		$(element).text(text);
+	}
+}
+
 var display = Numbas.display = {
 	// update progress bar when loading
 	showLoadProgress: function()
@@ -271,6 +288,9 @@ display.PartDisplay = function(p)
 
 	this.path = ko.observable(p.path);
 	this.prompt = ko.observable(p.prompt);
+	this.type = ko.observable(p.type);
+
+	this.feedbackShown = ko.observable(false);
 }
 display.PartDisplay.prototype = 
 {
@@ -284,6 +304,11 @@ display.PartDisplay.prototype =
 	//remove all previously displayed warnings
 	removeWarnings: function()
 	{
+	},
+
+	//toggle the feedback display
+	toggleFeedback: function() {
+		this.feedbackShown(!this.feedbackShown);
 	},
 
 	//called when part is displayed (basically when question is changed)

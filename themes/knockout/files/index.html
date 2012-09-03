@@ -124,12 +124,13 @@ Copyright 2011 Newcastle University
 				<div id="questionContainer" data-bind="visible: exam.view()=='question'">
 					<!-- top navigation bar - prv/nxt, and question name -->
 					<div class="mainDiv navBar">
-						<button class="leftNav" id="prevBtn">Previous</button>
-						<button class="rightNav" id="nextBtn">Next</button>
+						<button class="leftNav" id="prevBtn" data-bind="localise: 'control.previous', click: Numbas.controls.previousQuestion"></button>
+						<button class="rightNav" id="nextBtn" data-bind="localise: 'control.next', click: Numbas.controls.nextQuestion"></button>
+
 						<div class="titleBits" data-bind="with: exam.currentQuestion">
 							<span id="questionNameDisplay" data-bind="text: name">Question Name</span>
 							<span class="adviceNav">
-								<button id="revealBtn" data-bind="fadeVisible: canReveal">Reveal</button>
+								<button id="revealBtn" data-bind="visible: canReveal, click: Numbas.controls.revealAnswer">Reveal</button>
 							</span>
 						</div>
 					</div>
@@ -141,22 +142,24 @@ Copyright 2011 Newcastle University
 							<div id="questionDisplay" class="question clearAfter" data-bind="with: exam.currentQuestion, mathjax: true">
 								<div class="statement content" data-bind="append: statement"></div>
 
-								<ol class="parts" data-bind="foreach: parts">
-									<li class="part" data-bind="attr:{id: path}">
+								<ol class="parts lower-alpha-bracket" data-bind="foreach: parts">
+									<li class="part clearAfter" data-bind="attr:{id: path}">
 										<span class="prompt content" data-bind="append: prompt"></span>
+
+
 										<div id="partFeedback">
 											<button id="submitPart">Submit part</button>
 											<div id="marks">
 												<span id="score"></span>
 												<span id="feedback"><img src="resources/cross.png"/></span>
 											</div>
-											<button id="feedbackToggle"></button>
+											<button id="feedbackToggle", data-bind="click: toggleFeedback"></button>
 										</div>
-										<div id="feedbackMessage"></div>
+										<div id="feedbackMessage" data-bind="visible: feedbackShown"></div>
 									</li>
 								</ol>
 
-								<div class="advice content">
+								<div class="advice content" data-bind="visible: adviceDisplayed">
 									<h3>Advice</h3>
 									<div data-bind="append: advice"></div>
 								</div>
@@ -189,8 +192,8 @@ Copyright 2011 Newcastle University
 					</div>
 					<!-- bottom nav bar - prv/nxt, plus submit/advice/reveal buttons -->
 					<div class="mainDiv navBar">
-						<button id="prevBtn" class="leftNav">Previous</button>
-						<button id="nextBtn" class="rightNav">Next</button>
+						<button class="leftNav" id="prevBtn" data-bind="localise: 'control.previous', click: Numbas.controls.previousQuestion"></button>
+						<button class="rightNav" id="nextBtn" data-bind="localise: 'control.next', click: Numbas.controls.nextQuestion"></button>
 						<div class="submitDiv">
 							<button id="submitBtn">Submit all parts</button>
 							<div id="marks">	
