@@ -128,7 +128,7 @@ Copyright 2011 Newcastle University
 						<button class="rightNav" id="nextBtn" data-bind="localise: 'control.next', click: Numbas.controls.nextQuestion"></button>
 
 						<div class="titleBits" data-bind="with: exam.currentQuestion">
-							<span id="questionNameDisplay" data-bind="text: name">Question Name</span>
+							<span id="questionNameDisplay" data-bind="text: (number()+1)+'. '+name()"></span>
 							<span class="adviceNav">
 								<button id="revealBtn" data-bind="visible: canReveal, click: Numbas.controls.revealAnswer">Reveal</button>
 							</span>
