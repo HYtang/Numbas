@@ -14,8 +14,23 @@ Copyright 2011 Newcastle University
    limitations under the License.
 */
 R.registerLocale('en-GB',{
+
+	'info.num questions': 'Number of questions:',
+	'info.marks available': 'Marks available:',
+	'info.pass percentage': 'Pass percentage:',
+	'info.time allowed': 'Time Allowed:',
+
+	'info.resume': '<p>The Exam has been suspended. Press Resume to continue.</p><p>You will be able to resume this session the next time you start this activity.</p>',
+
+	'info.total score': 'Total %i/%i',
+	'info.time remaining': 'Time remaining: %s',
+
+	'control.start': 'Start',
 	'control.previous': 'Previous',
 	'control.next': 'Next',
+	'control.pause': 'Pause',
+	'control.resume': 'Resume',
+	'control.end': 'End Exam',
 	'control.confirm end': "Are you sure you want to end the exam? After you end the exam, you will not be able to change any of your answers.",
 	'control.confirm regen': "Would you like to re-randomise this question? If you click OK, all your answers and marks for the current question will be lost.",
 	'control.confirm reveal': "Would you like to reveal the answer to this question? Any marks you have received so far will be removed and you will not be able to answer this question later.",
@@ -24,6 +39,7 @@ R.registerLocale('en-GB',{
 	'control.submit all parts': "Submit all parts",
 	'control.submit again': "Submit again",
 	'control.submit': "Submit",
+	'control.submit part': "Submit part",
 
 	'display.part.jme.error making maths': "Error making maths display",
 	

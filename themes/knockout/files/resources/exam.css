@@ -29,7 +29,6 @@ body {
 button {
 	margin: 0.1em 0.3em;
 	min-width: 7em;
-	/*border: 1px solid #999999*/;
 	background: #f5f5f5;
 	border: 1px solid #999;
 	border-radius: 0;
@@ -37,7 +36,7 @@ button {
 }
 
 button:hover, button:focus {
-	background: #f90;
+	background-color: #f90;
 }
 
 #progressbar {
@@ -50,6 +49,11 @@ button:hover, button:focus {
 	position:absolute;
 	left:0.3em;
 	top:0.15em;
+}
+
+#frontpage-table {
+	width: 30em;
+	margin: 0 auto 1.4em auto;
 }
 
 #completed {
@@ -73,7 +77,7 @@ button:hover, button:focus {
 /* title bar */
 .titleBar{
 	position:relative;
-	height:75px;
+	min-height:75px;
 }
 .logo{
 	position:absolute;
@@ -89,26 +93,20 @@ button:hover, button:focus {
 	font-weight: bold;
 }
 
-.timeBox{
-	text-align:center;
-}
-#stopWatch {
+.stopwatch {
 	font-size: 1em;
 	font-weight: bold;
 	color: #1F4564;
+	text-align: center;
+	padding: 1em;
 }
-.timeBox p {
-	margin: 0.1em 0;
-}
-
 
 .navBar{
 	zoom: 1;
 	margin-left: auto;
 	margin-right: auto;
-	padding:0.2em;
+	padding:0.5em;
 	background: #A2D1F0;
-	border: 1px solid #999999;
 	line-height:2em;
 }
 
@@ -119,8 +117,11 @@ button:hover, button:focus {
 	float:right;
 }
 .menuButtons {
-	text-align:center;
 	margin-top: 0.6em;
+}
+.menuButtons button {
+	display: block;
+	margin: 0.5em auto 0 auto;
 }
 
 .titleBits {
@@ -129,6 +130,9 @@ button:hover, button:focus {
 
 #questionNameDisplay{
 	font-size:2em;
+	display: inline-block;
+	margin: 0;
+	vertical-align: bottom;
 }
 
 .mainDisplay {
@@ -136,7 +140,7 @@ button:hover, button:focus {
 	overflow-x:hidden;
 }
 
-#infoDisplay {
+.infoDisplay {
 	width:75%;
 	margin: 1em auto;
 }
@@ -197,7 +201,6 @@ button:hover, button:focus {
 	clear:both;
 	text-align:center;
 	padding: 0.5em 0.5em 0 0.5em;
-	border: 1px solid #a2d1f0;
 	max-height: 20em;
 	overflow-y: auto;
 	margin: 0 0 0 auto;
@@ -212,56 +215,42 @@ button:hover, button:focus {
 }
 
 
-/* column container */
-#questionContainer {
-	position:relative;		/* This fixes the IE7 overflow hidden bug and stops the layout jumping out of place */
-	clear:both;
-	float:left;
-	width:100%;			/* width of whole page */
-	background:#A2D1F0;
-}
-
 #questionContainer p {
 	line-height: 1.3em;
 }
 
-/* 2 column left menu settings */
-#questionContainer .colwrap {
-	float:left;
-	width:200%;
-	position:relative;
-	left:13em;
-	background:#fff;
+.colwrap {
+    padding: 1em 0;
 }
-#questionContainer .col1wrap {
-	float:right;
-	width:50%;
-	position:relative;
-	right:13em;
-	padding-bottom:1em;
+.questionMenu {
+	float: left;
+    background: #a2d1f0;
+    padding: 0.9em 0.3em;
+    width: 14em;
 }
 
-#questionDisplay{
-	margin:1em 0.5em 0 14.5em;
-	position:relative;
-	right:100%;
-	/*overflow:hidden;*/
-}
-#questionContainer .questionMenu {
-	float:left;
-	width:12em;
-	position:relative;
-	right:12.5em;
-	padding-bottom: 1em;
+.carousel {
+	margin-bottom: 1em;
 }
 
-.carouselBtn {
-	text-align:center;
+.carousel button {
+	background-color: none;
+	background-position: center;
+	background-repeat: no-repeat;
+	border: none;
+	padding: 2px 5px;
+	width: 16px;
+	min-width: 0;
+	min-height: 0;
 	margin: 0 auto;
-	width:100%;
+	display: block;
 }
-.carouselBtn:hover {
-	cursor: pointer;
+
+.carouselPrev {
+	background: url('arrow-up.png') no-repeat;
+}
+.carouselNext {
+	background: url('arrow-down.png') no-repeat;
 }
 
 .questionList {
@@ -383,12 +372,14 @@ button:hover, button:focus {
 }
 
 .statement {
-	margin: 1em 0;
-	padding-top: 0.2em;
-	padding-left: 1em;
-	padding-bottom: 0.1em;
+	padding: 1em;
 	background: #cfc;
 }
+
+.parts {
+	overflow: hidden;	/* stops parts from clearing the questionMenu float */
+}
+
 .part {
 	margin: .5em 0;
 }
@@ -421,8 +412,7 @@ div.part {
 	display:inline;
 }
 .question {
-	border:1px;
-	margin-bottom: 1em;
+	margin-left: 15em;
 }
 
 .warningcontainer {
@@ -464,7 +454,6 @@ div.part {
 
 .part #partFeedback {
 	background: #A2D1F0;
-	border: 1px solid #999999;
 	padding: 0.2em 0.2em 0.2em 0.1em;
 	float:right;
 }

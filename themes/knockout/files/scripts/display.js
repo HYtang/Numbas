@@ -47,16 +47,15 @@ ko.bindingHandlers.localise = {
 	update: function(element,valueAccessor) {
 		var value = ko.utils.unwrapObservable(valueAccessor());
 		var text;
-		console.log(value);
 		if(typeof value == 'object') {
 			var str = value.str;
 			var args = value.args;
-			text = R.apply(str,args);
+			text = R.apply(this,[str,args]);
 		}
 		else
 			text = R(value);
 
-		$(element).text(text);
+		$(element).html(text);
 	}
 }
 
@@ -114,12 +113,19 @@ display.ExamDisplay = function(e)
 	this.passed = ko.computed(function() {
 		return ed.percentScore()>ed.percentPass();
 	});
+	this.result = ko.computed(function() {
+		return ed.passed() ? R('info.passed') : R('info.failed');
+	})
 	this.totalQuestions = ko.observable(0);
 	this.allQuestions = ko.observable(true);
 	this.selectQuestions = ko.observable(0);
 	this.shuffleQuestions = ko.observable(false);
 	this.currentQuestion = ko.observable();
 	this.questions = ko.observableArray([]);
+	this.questionsAttempted = ko.computed(function() {
+		var attempted = 0;
+		return attempted+' / '+ed.questions().length;
+	});
 	this.allowRegen = ko.observable(false),
 	this.allowReverse = ko.observable(false),
 	this.allowBrowse = ko.observable(false),
@@ -130,16 +136,18 @@ display.ExamDisplay = function(e)
 	this.displayDuration = ko.computed(function() {
 		return Numbas.timing.secsToDisplayTime( ed.duration() );
 	});
-	this.timeout = new Action(),
-	this.timedWarning = new Action(),
-	this.stopwatch = ko.computed(function() {}),
-	this.timeRemaining = ko.computed(function() {}),
-	this.timeSpent = ko.observable(0),
+	this.timeout = new Action();
+	this.timedWarning = new Action();
+	this.startTime = ko.observable(0);
+	this.endTime = ko.observable(0);
+	this.stopwatch = ko.computed(function() {});
+	this.timeRemaining = ko.observable('');
+	this.timeSpent = ko.observable(0);
 	this.inProgress = ko.observable(false)
-	this.showActualMark = ko.observable(false),
-	this.showTotalMark = ko.observable(false),
-	this.showAnswerState = ko.observable(false),
-	this.allowRevealAnswer = ko.observable(false),
+	this.showActualMark = ko.observable(false);
+	this.showTotalMark = ko.observable(false);
+	this.showAnswerState = ko.observable(false);
+	this.allowRevealAnswer = ko.observable(false);
 	this.adviceThreshold = ko.observable(false)
 }
 display.ExamDisplay.prototype = 
@@ -173,8 +181,13 @@ display.ExamDisplay.prototype =
 		this.adviceThreshold(e.adviceGlobalThreshold);
 	},
 
-	showTiming: function()
+	updateTiming: function()
 	{
+		var e = this.e;
+		this.startTime(e.stopwatch.start);
+		this.endTime(e.stopwatch.end);
+		this.timeSpent(e.timeSpent);
+		this.timeRemaining(e.timeRemaining);
 	},
 
 	hideTiming: function()
@@ -187,6 +200,8 @@ display.ExamDisplay.prototype =
 
 	showInfoPage: function(page)
 	{
+		console.log(page);
+		this.view(page);
 	},
 
 	showQuestion: function()
@@ -290,6 +305,7 @@ display.PartDisplay = function(p)
 	this.prompt = ko.observable(p.prompt);
 	this.type = ko.observable(p.type);
 
+	this.feedback = ko.observableArray([]);
 	this.feedbackShown = ko.observable(false);
 }
 display.PartDisplay.prototype = 
@@ -308,7 +324,7 @@ display.PartDisplay.prototype =
 
 	//toggle the feedback display
 	toggleFeedback: function() {
-		this.feedbackShown(!this.feedbackShown);
+		this.feedbackShown(!this.feedbackShown());
 	},
 
 	//called when part is displayed (basically when question is changed)
@@ -335,6 +351,13 @@ display.PartDisplay.prototype =
 	//fills inputs with correct answers
 	revealAnswer: function() 
 	{
+	},
+
+	submit: function() {
+		this.p.submit();
+		if(!this.p.answered)
+			Numbas.display.showAlert(R('question.can not submit'));
+		Numbas.store.save();
 	}
 };
 
@@ -394,6 +417,12 @@ display.PatternMatchPartDisplay = extend(display.PartDisplay,display.PatternMatc
 //Number Entry display code
 display.NumberEntryPartDisplay = function()
 {
+	var p = this.p;
+	var pd = this;
+	this.studentAnswer = ko.observable('');
+	ko.computed(function() {
+		p.storeAnswer([pd.studentAnswer()]);
+	});
 }
 display.NumberEntryPartDisplay.prototype =
 {

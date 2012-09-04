@@ -68,32 +68,126 @@ Copyright 2011 Newcastle University
 
 		<!-- knockout templates -->
 
-		<script type="text/html" id="frontpage-template">
-			<table data-bind="with: exam">
+		<script type="text/html" id="template-frontpage">
+			<table id="frontpage-table" data-bind="with: exam">
 				<tr>
-					<td>Number of Questions:</td>
+					<td data-bind="localise: 'info.num questions'"></td>
 					<td class="rtd" data-bind="text: questions().length">
 					</td>
 				</tr>
 				<tr data-bind="if: showTotalMark">
-					<td>Marks Available:</td>
+					<td data-bind="localise: 'info.marks available'"></td>
 					<td class="rtd" data-bind="text: mark">
 					</td>
 				</tr>
 				<tr data-bind="if: percentPass()>0">
-					<td>Pass Percentage:</td>
+					<td data-bind="localise: 'info.pass percentage'"></td>
 					<td class="rtd" data-bind="text: percentPass()*100+'%'">
 					</td>
 				</tr>
 				<tr data-bind="if: duration()>0">
-					<td>Time Allowed:</td>
+					<td data-bind="localise: 'info.time allowed'"></td>
 					<td class="rtd" data-bind="text: displayDuration">
 					</td>
 				</tr>
 			</table>
 			<div class="startBtn">
-				<button id="startBtn" data-bind="click: Numbas.controls.beginExam">Start</button>
+				<button id="startBtn" data-bind="click: Numbas.controls.beginExam, localise: 'control.start'"></button>
 			</div>
+		</script>
+
+		<script type="text/html" id="template-suspend">
+			<div data-bind="localise: 'info.resume'">
+				<p>The Exam has been suspended. Press Resume to continue.</p>
+				<p>You will be able to resume this session the next time you start this activity.</p>
+			</div>
+			<button id="resumeBtn" data-bind="localise: 'control.resume', click: Numbas.controls.resumeExam"></button>
+		</script>
+
+		<script type="text/html" id="template-result">
+			<h3>Exam Summary</h3>
+
+			<table data-bind="with: exam">
+				<tr>
+					<td data-bind="localise: 'info.exam name'"></td>
+					<td class="rtd" data-bind="html: name"></td>
+				</tr>
+				<tr>
+					<td data-bind="localise: 'info.num questions'"></td>
+					<td class="rtd" data-bind="text: questions().length"></td>
+				</tr>
+				<tr data-bind="if: showTotalMark">
+					<td data-bind="localise: 'info.marks available'"></td>
+					<td class="rtd" data-bind="text: mark">
+					</td>
+				</tr>
+				<tr data-bind="if: percentPass()>0">
+					<td data-bind="localise: 'info.pass percentage'"></td>
+					<td class="rtd" data-bind="text: percentPass()*100+'%'">
+					</td>
+				</tr>
+				<tr data-bind="if: duration()>0">
+					<td data-bind="localise: 'info.time allowed'"></td>
+					<td class="rtd" data-bind="text: displayDuration">
+					</td>
+				</tr>
+			</table>
+
+			<h3>Performance Summary</h3>
+
+			<table data-bind="with: exam">
+				<tr>
+					<td data-bind="localise: 'info.start time'"></td>
+					<td class="rtd" data-bind="text: startTime"></td>	
+				</tr>	
+				<tr>
+					<td data-bind="localise: 'info.stop time'"></td>
+					<td class="rtd" data-bind="text: stopTime"></td>	
+				</tr>
+				<tr>
+					<td data-bind="localise: 'info.time spent'"></td>
+					<td class="rtd" data-bind="text: timeSpent"></td>
+				</tr> 
+				<tr>
+					<td data-bind="localise: 'info.questions attempted'"></td>
+					<td class="rtd" data-bind="text: questionsAttempted"></td>
+				</tr>
+				<tr>
+					<td data-bind="localise: 'info.score'"></td>
+					<td class="rtd" data-bind="text: score()+'/'+mark()+' ('+percentScore()+'%)'"></td>
+				</tr>
+				<tr class="resultrow" data-bind="if: percentPass()>0">
+					<td data-bind="localise: 'info.result'"></td>
+					<td class="rtd" data-bind="text: result"></td>	
+				</tr>							
+			</table>
+
+			<h3>Detailed Question Breakdown</h3>
+
+			<table>		
+				<thead>
+					<tr>
+						<th data-bind="localise: 'info.question number'"></th>
+						<th data-bind="localise: 'info.topic'"></th>
+						<th data-bind="localise: 'info.question score'"></th>
+					</tr>		
+				</thead>
+				<tbody data-bind="foreach: exam.questions"
+					<tr>
+						<td data-bind="text: number"></td>
+						<td data=bind="html: name"></td>
+						<td data-bind="text: score()+'/'+marks()"></td>
+					</tr>
+				</tbody>
+			</table>
+
+			<button id="exitBtn">Exit</button>
+			<button id="reviewBtn">Review</button>
+		</script>
+
+
+		<script type="text/html" id="template-part-numberentry">
+			<input type="text" class="numberentry" data-bind="value: studentAnswer"/>
 		</script>
 
 	</head>
@@ -119,7 +213,9 @@ Copyright 2011 Newcastle University
 			<!-- main content area - info pages or questions go in here -->
 			<div class="mainDisplay">
 
-				<div class="infoDisplay" id="frontpage" data-bind="visible: exam.view()=='frontpage', template: 'frontpage-template'"></div>
+				<div class="infoDisplay" id="frontpage" data-bind="visible: exam.view()=='frontpage', template: 'template-frontpage'"></div>
+				<div class="infoDisplay" id="suspend" data-bind="visible: exam.view()=='suspend', template: 'template-suspend'"></div>
+				<div class="infoDisplay" id="result" data-bind="visible: exam.view()=='result', template: 'template-result'"></div>
 
 				<div id="questionContainer" data-bind="visible: exam.view()=='question'">
 					<!-- top navigation bar - prv/nxt, and question name -->
@@ -128,68 +224,64 @@ Copyright 2011 Newcastle University
 						<button class="rightNav" id="nextBtn" data-bind="localise: 'control.next', click: Numbas.controls.nextQuestion"></button>
 
 						<div class="titleBits" data-bind="with: exam.currentQuestion">
-							<span id="questionNameDisplay" data-bind="text: (number()+1)+'. '+name()"></span>
-							<span class="adviceNav">
-								<button id="revealBtn" data-bind="visible: canReveal, click: Numbas.controls.revealAnswer">Reveal</button>
-							</span>
+							<h2 id="questionNameDisplay" data-bind="text: (number()+1)+'. '+name()"></h2>
+							<button id="revealBtn" data-bind="visible: canReveal, click: Numbas.controls.revealAnswer">Reveal</button>
 						</div>
 					</div>
 
 					<div class="colwrap">
-
-						<!-- question and advice go in here -->
-						<div class="col1wrap">
-							<div id="questionDisplay" class="question clearAfter" data-bind="with: exam.currentQuestion, mathjax: true">
-								<div class="statement content" data-bind="append: statement"></div>
-
-								<ol class="parts lower-alpha-bracket" data-bind="foreach: parts">
-									<li class="part clearAfter" data-bind="attr:{id: path}">
-										<span class="prompt content" data-bind="append: prompt"></span>
-
-
-										<div id="partFeedback">
-											<button id="submitPart">Submit part</button>
-											<div id="marks">
-												<span id="score"></span>
-												<span id="feedback"><img src="resources/cross.png"/></span>
-											</div>
-											<button id="feedbackToggle", data-bind="click: toggleFeedback"></button>
-										</div>
-										<div id="feedbackMessage" data-bind="visible: feedbackShown"></div>
-									</li>
-								</ol>
-
-								<div class="advice content" data-bind="visible: adviceDisplayed">
-									<h3>Advice</h3>
-									<div data-bind="append: advice"></div>
-								</div>
-							</div>
-						</div>
-
 						<!-- menu for navigating questions and displaying scores/feedback -->
 						<!-- also timing controls -->
-						<div class="questionMenu">
-							<div class="carouselBtn prev"><img src="resources/arrow-up.png" /></div>
-							<div class="questionList">
+						<div class="questionMenu" data-bind="with: exam">
+							<div class="carousel">
+								<button class="carouselPrev"></button>
 								<ul id="questionList">
 								</ul>
+								<button class="carouselNext"></button>
 							</div>
-							<div class="carouselBtn next"><img src="resources/arrow-down.png" /></div>
-
+	
 							<!-- total exam score display -->
-							<div class="examScore">
-								Total <span id="examScore">0/0</span>
-							</div>
+							<div class="examScore" data-bind="localise: {str: 'info.total score', args: [score(),mark()]}"></div>
 							
 							<!-- stopwatch and timing controls -->
-							<div class="mainDiv timeBox">
-								<p id="stopWatch">Time remaining: 01:00:00</p>
-							</div>
-
+							<div class="stopwatch" data-bind="localise: {str:'info.time remaining', args: [timeRemaining()]}"></div>
+	
 							<!-- end exam button -->
-							<div class="menuButtons"><button id="pauseBtn">Pause</button><br/><button id="endBtn">End Exam</button></div>
+							<div class="menuButtons">
+								<button id="pauseBtn" data-bind="localise: 'control.pause', click: Numbas.controls.pauseExam"></button>
+								<button id="endBtn" data-bind="localise: 'control.end', click: Numbas.controls.endExam"></button>
+							</div>
+						</div>
+	
+						<!-- question and advice go in here -->
+						<div id="questionDisplay" class="question clearAfter" data-bind="with: exam.currentQuestion, mathjax: true">
+							<div class="statement content" data-bind="append: statement"></div>
+
+							<ol class="parts lower-alpha-bracket" data-bind="foreach: parts">
+								<li class="part clearAfter" data-bind="attr:{id: path}">
+									<span class="prompt content" data-bind="append: prompt"></span>
+
+									<!-- ko template: 'template-part-'+type() --><!-- /ko -->
+
+									<div id="partFeedback">
+										<button id="submitPart" data-bind="click: submit, localise: 'control.submit part'"></button>
+										<div id="marks">
+											<span id="score"></span>
+											<span id="feedback"><img src="resources/cross.png"/></span>
+										</div>
+										<button id="feedbackToggle", data-bind="visible: feedback().length>0, click: toggleFeedback, localise: feedbackShown() ? 'control.hide feedback' : 'control.show feedback' "></button>
+									</div>
+									<div id="feedbackMessage" data-bind="visible: feedbackShown"></div>
+								</li>
+							</ol>
+
+							<div class="advice content" data-bind="visible: adviceDisplayed">
+								<h3>Advice</h3>
+								<div data-bind="append: advice"></div>
+							</div>
 						</div>
 					</div>
+
 					<!-- bottom nav bar - prv/nxt, plus submit/advice/reveal buttons -->
 					<div class="mainDiv navBar">
 						<button class="leftNav" id="prevBtn" data-bind="localise: 'control.previous', click: Numbas.controls.previousQuestion"></button>

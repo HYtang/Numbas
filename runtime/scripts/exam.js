@@ -364,7 +364,7 @@ Exam.prototype = {
 		};
 
 		if( this.duration > 0 )
-			this.display.showTiming();
+			this.display.updateTiming();
 			
 		else
 			this.display.hideTiming();
@@ -382,7 +382,7 @@ Exam.prototype = {
 		if(this.duration > 0)
 		{
 			this.timeRemaining = Math.ceil((this.endTime - t)/1000);
-			this.display.showTiming();
+			this.display.updateTiming();
 
 			if(this.duration > 300 && this.timeRemaining<300 && !this.showedTimeWarning)
 			{
