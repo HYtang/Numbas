@@ -238,7 +238,7 @@ button:hover, button:focus {
 	background-position: center;
 	background-repeat: no-repeat;
 	border: none;
-	padding: 2px 5px;
+	padding: 2px 24px;
 	width: 16px;
 	min-width: 0;
 	min-height: 0;

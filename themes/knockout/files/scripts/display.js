@@ -141,7 +141,15 @@ display.ExamDisplay = function(e)
 	this.startTime = ko.observable(0);
 	this.endTime = ko.observable(0);
 	this.stopwatch = ko.computed(function() {});
-	this.timeRemaining = ko.observable('');
+	var timeRemaining = ko.observable(0);
+	this.timeRemaining = ko.computed({
+		read: function() {
+			return Numbas.timing.secsToDisplayTime(timeRemaining());
+		},
+		write: function(t) {
+			timeRemaining(t);
+		}
+	});
 	this.timeSpent = ko.observable(0);
 	this.inProgress = ko.observable(false)
 	this.showActualMark = ko.observable(false);
@@ -188,6 +196,7 @@ display.ExamDisplay.prototype =
 		this.endTime(e.stopwatch.end);
 		this.timeSpent(e.timeSpent);
 		this.timeRemaining(e.timeRemaining);
+		this.inProgress(e.inProgress);
 	},
 
 	hideTiming: function()
@@ -200,7 +209,6 @@ display.ExamDisplay.prototype =
 
 	showInfoPage: function(page)
 	{
-		console.log(page);
 		this.view(page);
 	},
 

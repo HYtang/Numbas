@@ -325,6 +325,7 @@ Exam.prototype = {
 	{
 		this.start = new Date();        //make a note of when the exam was started
 		this.endTime = new Date(this.start.getTime()+this.duration*1000);	//work out when the exam should end
+		this.timeRemaining = this.duration;
 
 		this.changeQuestion(0);			//start at the first question!
 
@@ -356,6 +357,7 @@ Exam.prototype = {
 	startTiming: function()
 	{
 		this.inProgress = true;
+
 		this.stopwatch = {
 			start: new Date(),
 			end: new Date((new Date()).getTime() + this.timeRemaining*1000),
@@ -381,7 +383,7 @@ Exam.prototype = {
 
 		if(this.duration > 0)
 		{
-			this.timeRemaining = Math.ceil((this.endTime - t)/1000);
+			this.timeRemaining = Math.ceil((this.stopwatch.end - t)/1000);
 			this.display.updateTiming();
 
 			if(this.duration > 300 && this.timeRemaining<300 && !this.showedTimeWarning)
