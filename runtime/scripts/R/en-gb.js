@@ -18,6 +18,7 @@ R.registerLocale('en-GB',{
 	'mark': 'mark',
 	'marks': 'marks',
 
+	'info.exam name': "Exam name:",
 	'info.num questions': 'Number of questions:',
 	'info.marks available': 'Marks available:',
 	'info.pass percentage': 'Pass percentage:',
@@ -27,6 +28,15 @@ R.registerLocale('en-GB',{
 
 	'info.total score': 'Total %i/%i',
 	'info.time remaining': 'Time remaining: %s',
+	'info.start time': "Start time:",
+	'info.end time': "Finish time:",
+	'info.time spent': "Time spent:",
+	'info.questions attempted': "Questions attempted:",
+	'info.score': "Score",
+
+	'info.question number': "Number",
+	'info.question name': "Name",
+	'info.question score': "Score",
 
 	'control.start': 'Start',
 	'control.previous': 'Previous',
@@ -34,6 +44,7 @@ R.registerLocale('en-GB',{
 	'control.pause': 'Pause',
 	'control.resume': 'Resume',
 	'control.end': 'End Exam',
+	'control.regen question': "Try another question like this one",
 	'control.confirm end': "Are you sure you want to end the exam? After you end the exam, you will not be able to change any of your answers.",
 	'control.confirm regen': "Would you like to re-randomise this question? If you click OK, all your answers and marks for the current question will be lost.",
 	'control.confirm reveal': "Would you like to reveal the answer to this question? Any marks you have received so far will be removed and you will not be able to answer this question later.",

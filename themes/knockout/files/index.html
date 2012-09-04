@@ -75,25 +75,23 @@ Copyright 2011 Newcastle University
 					<td class="rtd" data-bind="text: questions().length">
 					</td>
 				</tr>
-				<tr data-bind="if: showTotalMark">
+				<tr data-bind="visible: showTotalMark">
 					<td data-bind="localise: 'info.marks available'"></td>
 					<td class="rtd" data-bind="text: mark">
 					</td>
 				</tr>
-				<tr data-bind="if: percentPass()>0">
+				<tr data-bind="visible: percentPass()>0">
 					<td data-bind="localise: 'info.pass percentage'"></td>
 					<td class="rtd" data-bind="text: percentPass()*100+'%'">
 					</td>
 				</tr>
-				<tr data-bind="if: duration()>0">
+				<tr data-bind="visible: duration()>0">
 					<td data-bind="localise: 'info.time allowed'"></td>
 					<td class="rtd" data-bind="text: displayDuration">
 					</td>
 				</tr>
 			</table>
-			<div class="startBtn">
-				<button id="startBtn" data-bind="click: Numbas.controls.beginExam, localise: 'control.start'"></button>
-			</div>
+			<button id="startBtn" data-bind="click: Numbas.controls.beginExam, localise: 'control.start'"></button>
 		</script>
 
 		<script type="text/html" id="template-suspend">
@@ -107,7 +105,7 @@ Copyright 2011 Newcastle University
 		<script type="text/html" id="template-result">
 			<h3>Exam Summary</h3>
 
-			<table data-bind="with: exam">
+			<table id="exam-summary" data-bind="with: exam">
 				<tr>
 					<td data-bind="localise: 'info.exam name'"></td>
 					<td class="rtd" data-bind="html: name"></td>
@@ -116,17 +114,17 @@ Copyright 2011 Newcastle University
 					<td data-bind="localise: 'info.num questions'"></td>
 					<td class="rtd" data-bind="text: questions().length"></td>
 				</tr>
-				<tr data-bind="if: showTotalMark">
+				<tr data-bind="visible: showTotalMark">
 					<td data-bind="localise: 'info.marks available'"></td>
 					<td class="rtd" data-bind="text: mark">
 					</td>
 				</tr>
-				<tr data-bind="if: percentPass()>0">
+				<tr data-bind="visible: percentPass()>0">
 					<td data-bind="localise: 'info.pass percentage'"></td>
 					<td class="rtd" data-bind="text: percentPass()*100+'%'">
 					</td>
 				</tr>
-				<tr data-bind="if: duration()>0">
+				<tr data-bind="visible: duration()>0">
 					<td data-bind="localise: 'info.time allowed'"></td>
 					<td class="rtd" data-bind="text: displayDuration">
 					</td>
@@ -135,13 +133,13 @@ Copyright 2011 Newcastle University
 
 			<h3>Performance Summary</h3>
 
-			<table data-bind="with: exam">
+			<table id="performance-summary" data-bind="with: exam">
 				<tr>
 					<td data-bind="localise: 'info.start time'"></td>
 					<td class="rtd" data-bind="text: startTime"></td>	
 				</tr>	
 				<tr>
-					<td data-bind="localise: 'info.stop time'"></td>
+					<td data-bind="localise: 'info.end time'"></td>
 					<td class="rtd" data-bind="text: endTime"></td>	
 				</tr>
 				<tr>
@@ -156,7 +154,7 @@ Copyright 2011 Newcastle University
 					<td data-bind="localise: 'info.score'"></td>
 					<td class="rtd" data-bind="text: score()+'/'+mark()+' ('+percentScore()+'%)'"></td>
 				</tr>
-				<tr class="resultrow" data-bind="if: percentPass()>0">
+				<tr class="resultrow" data-bind="visible: percentPass()>0">
 					<td data-bind="localise: 'info.result'"></td>
 					<td class="rtd" data-bind="text: result"></td>	
 				</tr>							
@@ -164,18 +162,23 @@ Copyright 2011 Newcastle University
 
 			<h3>Detailed Question Breakdown</h3>
 
-			<table>		
+			<table id="question-breakdown">	
+				<colgroup>
+					<col class="number"/>
+					<col class="name"/>
+					<col class="score"/>
+				</colgroup>
 				<thead>
 					<tr>
 						<th data-bind="localise: 'info.question number'"></th>
-						<th data-bind="localise: 'info.topic'"></th>
+						<th data-bind="localise: 'info.question name'"></th>
 						<th data-bind="localise: 'info.question score'"></th>
 					</tr>		
 				</thead>
 				<tbody data-bind="foreach: exam.questions"
 					<tr>
 						<td data-bind="text: number"></td>
-						<td data=bind="html: name"></td>
+						<td data-bind="html: name"></td>
 						<td data-bind="text: score()+'/'+marks()"></td>
 					</tr>
 				</tbody>
@@ -229,7 +232,7 @@ Copyright 2011 Newcastle University
 						<button class="rightNav" id="nextBtn" data-bind="localise: 'control.next', click: Numbas.controls.nextQuestion"></button>
 
 						<div class="titleBits" data-bind="with: exam.currentQuestion">
-							<h2 id="questionNameDisplay" data-bind="text: (number()+1)+'. '+name()"></h2>
+							<h2 id="questionNameDisplay" data-bind="text: number()+'. '+name()"></h2>
 							<button id="revealBtn" data-bind="visible: canReveal, click: Numbas.controls.revealAnswer">Reveal</button>
 						</div>
 					</div>
@@ -292,12 +295,12 @@ Copyright 2011 Newcastle University
 						<button class="leftNav" id="prevBtn" data-bind="localise: 'control.previous', click: Numbas.controls.previousQuestion"></button>
 						<button class="rightNav" id="nextBtn" data-bind="localise: 'control.next', click: Numbas.controls.nextQuestion"></button>
 						<div class="submitDiv" data-bind="with: exam.currentQuestion">
-							<button id="submitBtn">Submit all parts</button>
+							<button id="submitBtn" data-bind="localise: 'control.submit all parts', click: Numbas.controls.submitQuestion"></button>
 							<div class="marks" data-bind="template: 'template-marks'">	
 								<span id="score"></span>
 								<span id="feedback"><img src="resources/cross.png"/></span>
 							</div>
-							<button id="regenBtn">Try another question like this one</button>
+							<button id="regenBtn" data-bind="localise: 'control.regen question', click: Numbas.controls.regenQuestion"></button>
 						</div>
 					</div>
 				</div>

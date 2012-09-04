@@ -141,8 +141,12 @@ button:hover, button:focus {
 }
 
 .infoDisplay {
-	width:75%;
+	width: 40em;
 	margin: 1em auto;
+}
+
+.infoDisplay tr:nth-child(even) {
+	background: #fafafa;
 }
 
 .submitDiv {
@@ -158,6 +162,7 @@ button:hover, button:focus {
 
 .marks {
 	font-weight: bold;
+	display: inline-block;
 }
 .marks .feedback {
 	padding: 0;
@@ -338,8 +343,9 @@ button:hover, button:focus {
 
 
 /* front/exit pages */
-.startBtn {
-	text-align:center;
+#startBtn, #resumeBtn {
+	display: block;
+	margin: 0 auto;
 }
 
 .exitBtn {
@@ -356,6 +362,24 @@ button:hover, button:focus {
 .resultrow td {
 	font-weight:bold;
 	font-size: 1.5em;
+}
+
+#result table td:first-child {
+	padding-right: 5em;
+}
+
+#question-breakdown {
+	width: auto;
+	text-align: center;
+}
+#question-breakdown col.number {
+	width: 3em;
+}
+#question-breakdown col.name {
+	width: 30em;
+}
+#question-breakdown col.score {
+	width: 5em;
 }
 
 
@@ -508,12 +532,8 @@ div.jqi{
 	font-family: Verdana, Geneva, Arial, Helvetica, sans-serif;
 	position: absolute;
 	background-color: #ffffff;
-	font-size: 11px;
 	text-align: left;
 	border: solid 1px #eeeeee;
-	border-radius: 10px;
-	-moz-border-radius: 10px;
-	-webkit-border-radius: 10px;
 	padding: 7px;
 }
 div.jqi .jqicontainer{
@@ -529,10 +549,8 @@ div.jqi .jqiclose{
 }
 div.jqi .jqimessage{
 	padding: 10px;
-	line-height: 20px;
 	color: #444444;
 	font-weight: normal;
-	font-size: 150%;
 }
 div.jqi .jqibuttons{
 	text-align: right;
@@ -541,16 +559,9 @@ div.jqi .jqibuttons{
 	background-color: #f4f4f4;
 }
 div.jqi button{
-	padding: 3px 10px;
-	margin: 0 10px;
-	background-color: #2F6073;
-	border: solid 1px #f4f4f4;
-	color: #ffffff;
-	font-weight: bold;
-	font-size: 12px;
-}
-div.jqi button:hover{
-	background-color: #728A8C;
+	color: white;
+	background-color: #2f6073;
+	border: none;
 }
 div.jqi button.jqidefaultbutton{
 	background-color: #BF5E26;

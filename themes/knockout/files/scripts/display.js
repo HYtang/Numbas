@@ -132,6 +132,16 @@ var display = Numbas.display = {
 	},
 };
 
+function timeObservable(value) {
+	var t = ko.observable(value);
+	return ko.computed({
+		read: function(){return Numbas.timing.secsToDisplayTime(t())},
+		write: function(v) {
+			return t(v);
+		}
+	});
+}
+
 function Action() {
 }
 
@@ -182,16 +192,8 @@ display.ExamDisplay = function(e)
 	this.startTime = ko.observable(0);
 	this.endTime = ko.observable(0);
 	this.stopwatch = ko.computed(function() {});
-	var timeRemaining = ko.observable(0);
-	this.timeRemaining = ko.computed({
-		read: function() {
-			return Numbas.timing.secsToDisplayTime(timeRemaining());
-		},
-		write: function(t) {
-			timeRemaining(t);
-		}
-	});
-	this.timeSpent = ko.observable(0);
+	this.timeRemaining = timeObservable(0);
+	this.timeSpent = timeObservable(0);
 	this.inProgress = ko.observable(false)
 	this.showActualMark = ko.observable(false);
 	this.showTotalMark = ko.observable(false);
@@ -274,7 +276,7 @@ display.QuestionDisplay = function(q)
 
 	this.exam = q.exam.display;
 
-	this.number = ko.observable(q.number);
+	this.number = ko.observable(q.number+1);
 	this.name = ko.observable(q.name);
 
 	this.marks = ko.observable(q.marks);
