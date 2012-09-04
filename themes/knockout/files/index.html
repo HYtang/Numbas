@@ -186,8 +186,13 @@ Copyright 2011 Newcastle University
 		</script>
 
 
+		<script type="tex/html" id="template-marks">
+			<span class="score" data-bind="html: marksDescription"></span>
+			<span class="feedback" data-bind="visible: answered, css: {cross: score()<=0, tick: score()==marks(), partial: score()<marks() && score()>0}"></span>
+		</script>
+
 		<script type="text/html" id="template-part-numberentry">
-			<input type="text" class="numberentry" data-bind="value: studentAnswer"/>
+			<input type="text" class="numberentry" data-bind="value: studentAnswer, return: submit"/>
 		</script>
 
 	</head>
@@ -233,7 +238,7 @@ Copyright 2011 Newcastle University
 						<!-- menu for navigating questions and displaying scores/feedback -->
 						<!-- also timing controls -->
 						<div class="questionMenu" data-bind="with: exam">
-							<div class="carousel">
+							<div class="carousel" data-bind="visible: questions().length>1">
 								<button class="carouselPrev"></button>
 								<ul id="questionList">
 								</ul>
@@ -263,12 +268,12 @@ Copyright 2011 Newcastle University
 
 									<!-- ko template: 'template-part-'+type() --><!-- /ko -->
 
+									<ol class="steps" data-bind="visible: steps().length>0">
+									</ol>
+
 									<div id="partFeedback">
 										<button id="submitPart" data-bind="click: submit, localise: 'control.submit part'"></button>
-										<div id="marks">
-											<span id="score"></span>
-											<span id="feedback"><img src="resources/cross.png"/></span>
-										</div>
+										<div class="marks" data-bind="template: 'template-marks'"></div>
 										<button id="feedbackToggle", data-bind="visible: feedback().length>0, click: toggleFeedback, localise: feedbackShown() ? 'control.hide feedback' : 'control.show feedback' "></button>
 									</div>
 									<div id="feedbackMessage" data-bind="visible: feedbackShown"></div>
@@ -286,9 +291,9 @@ Copyright 2011 Newcastle University
 					<div class="mainDiv navBar">
 						<button class="leftNav" id="prevBtn" data-bind="localise: 'control.previous', click: Numbas.controls.previousQuestion"></button>
 						<button class="rightNav" id="nextBtn" data-bind="localise: 'control.next', click: Numbas.controls.nextQuestion"></button>
-						<div class="submitDiv">
+						<div class="submitDiv" data-bind="with: exam.currentQuestion">
 							<button id="submitBtn">Submit all parts</button>
-							<div id="marks">	
+							<div class="marks" data-bind="template: 'template-marks'">	
 								<span id="score"></span>
 								<span id="feedback"><img src="resources/cross.png"/></span>
 							</div>

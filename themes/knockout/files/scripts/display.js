@@ -16,6 +16,8 @@ Copyright 2011 Newcastle University
 
 Numbas.queueScript('scripts/display.js',['controls','math','xml','util','timing','jme','jme-display'],function() {
 
+var util = Numbas.util;
+
 ko.bindingHandlers.fadeVisible = {
 	init: function(element, valueAccessor) {
 		var value = ko.utils.unwrapObservable(valueAccessor());
@@ -57,6 +59,45 @@ ko.bindingHandlers.localise = {
 
 		$(element).html(text);
 	}
+}
+
+//call supplied function when return key is pressed
+ko.bindingHandlers.return = {
+	init: function(element,valueAccessor,allBindingsAccessor, viewModel, bindingContext) {
+		var fn = valueAccessor();
+		var obj = bindingContext.$data;
+		$(element).on('keyup',function(e) {
+			if(e.keyCode==13)
+				fn.apply(obj);
+		});
+	}
+}
+
+function marksDescriptor(obj,exam) {
+	return ko.computed(function() {
+		var niceNumber = Numbas.math.niceNumber;
+		var scoreDisplay = '';
+
+		var scoreobj = {
+			marks: niceNumber(obj.marks()),
+			score: niceNumber(obj.score()),
+			marksString: niceNumber(obj.marks())+' '+util.pluralise(obj.marks(),R('mark'),R('marks')),
+			scoreString: niceNumber(obj.marks())+' '+util.pluralise(obj.marks(),R('mark'),R('marks'))
+		};
+
+		if(obj.answered()) {
+			var str = 'question.score feedback.answered'
+						+ (exam.showTotalMark() ? ' total' : '')
+						+ (exam.showActualMark() ? ' actual' : '')
+			return R(str,scoreobj);
+		} 
+		else {
+			if(exam.showTotalMark())
+				return R('question.score feedback.unanswered total',scoreobj);
+			else
+				return '';
+		}
+	});
 }
 
 var display = Numbas.display = {
@@ -231,6 +272,8 @@ display.QuestionDisplay = function(q)
 	this.q = q;
 	var qd = this;
 
+	this.exam = q.exam.display;
+
 	this.number = ko.observable(q.number);
 	this.name = ko.observable(q.name);
 
@@ -238,9 +281,12 @@ display.QuestionDisplay = function(q)
 	this.score = ko.observable(0);
 	this.adviceThreshold = ko.observable(q.adviceThreshold);
 
+
 	this.visited = ko.observable(false);
 	this.answered = ko.observable(false);
 	this.submitted = ko.observable(0);
+
+	this.marksDescription = marksDescriptor(this,this.exam);
 
 	this.adviceDisplayed = ko.observable(false);
 	this.revealed = ko.observable(false);
@@ -302,12 +348,14 @@ display.QuestionDisplay.prototype =
 	}
 };
 
-var extend = Numbas.util.extend;
+var extend = util.extend;
 
 //display methods for question parts
 display.PartDisplay = function(p)
 {
 	this.p = p;
+	this.question = p.question.display;
+	this.exam = p.exam.display;
 
 	this.path = ko.observable(p.path);
 	this.prompt = ko.observable(p.prompt);
@@ -315,6 +363,14 @@ display.PartDisplay = function(p)
 
 	this.feedback = ko.observableArray([]);
 	this.feedbackShown = ko.observable(false);
+
+	this.score = ko.observable(0);
+	this.marks = ko.observable(this.p.marks);
+	this.answered = ko.observable(false);
+
+	this.marksDescription = marksDescriptor(this,this.exam);
+
+	this.steps = ko.observableArray(p.steps.map(function(s){return s.display}));
 }
 display.PartDisplay.prototype = 
 {
@@ -344,6 +400,9 @@ display.PartDisplay.prototype =
 	//update part score display
 	showScore: function(valid)
 	{
+		this.score(this.p.score);
+		this.marks(this.p.marks);
+		this.answered(this.p.answered);
 	},
 
 	//called when 'show steps' button is pressed, or coming back to a part after steps shown

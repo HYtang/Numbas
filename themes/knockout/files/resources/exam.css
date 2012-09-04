@@ -156,15 +156,28 @@ button:hover, button:focus {
 	width: auto;
 }
 
-#marks {
-	display:inline;
+.marks {
+	font-weight: bold;
 }
-#marks #feedback {
-	width:25px;
-	height:25px;
+.marks .feedback {
 	padding: 0;
-	display: inline-block !important;
-	vertical-align: middle;
+	font-size: 1.6em;
+	font-weight: bold;
+	display: inline-block;
+	width: 1em;
+}
+.marks .feedback.tick::before {
+	content: '\2713';
+	color: #0f0;
+}
+
+.marks .feedback.cross::before {
+	content: '\2717';
+	color: red;
+}
+.marks .feedback.partial::before {
+	content: '%';
+	color: blue;
 }
 
 .questionSelector:hover {
@@ -176,7 +189,7 @@ button:hover, button:focus {
 	color: black;
 }
 
-.questionSelector #marks #feedback {
+.questionSelector .marks .feedback {
 	padding: 0;
 }
 
@@ -185,19 +198,12 @@ button:hover, button:focus {
 	width: 15em;
 }
 
-.questionSelector #marks {
+.questionSelector .marks {
 	float: right;
 	clear: left;
 }
 
-#marks #feedback img {
-	visibility:hidden;
-}
-#marks #score {
-	display:none;
-}
-
-#feedbackMessage {
+.feedbackMessage {
 	clear:both;
 	text-align:center;
 	padding: 0.5em 0.5em 0 0.5em;
@@ -207,7 +213,7 @@ button:hover, button:focus {
 	width: 50em;
 }
 
-#feedbackMessage hr {
+.feedbackMessage hr {
 	max-width: 30em;
 	border: none;
 	height:1px;
@@ -283,16 +289,6 @@ button:hover, button:focus {
 	float:right;
 }
 
-.tick {
-	background-image:url('tick.png');
-}
-
-.cross {
-	background-image:url('cross.png');
-}
-.partial {
-	background-image:url('percent.png');
-}
 
 
 .qs-selected {
@@ -462,8 +458,8 @@ div.part {
 	width: 9em;
 }
 
-.part #marks {
-	font-weight: bold;
+.part .marks {
+	display: inline-block;
 	margin: 0 0.3em;
 }
 

@@ -15,6 +15,9 @@ Copyright 2011 Newcastle University
 */
 R.registerLocale('en-GB',{
 
+	'mark': 'mark',
+	'marks': 'marks',
+
 	'info.num questions': 'Number of questions:',
 	'info.marks available': 'Marks available:',
 	'info.pass percentage': 'Pass percentage:',

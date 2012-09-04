@@ -373,6 +373,7 @@ function Part( xml, path, question, parentPart, loading )
 
 	//remember parent question object
 	this.question = question;
+	this.exam = question.exam;
 
 	//remember parent part object, so scores can percolate up for steps/gaps
 	this.parentPart = parentPart;
