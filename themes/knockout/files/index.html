@@ -33,6 +33,9 @@ Copyright 2011 Newcastle University
 		<!--knockout-->
 		<script charset="UTF-8" type="text/javascript" src="scripts/knockout.js"></script>
 
+		<!-- d3 -->
+		<script charset="UTF-8" type="text/javascript" src="scripts/d3.js"></script>
+
 		<!--JQuery scripts-->
 		<script charset="UTF-8" type="text/javascript" src="scripts/jquery/jquery.js"></script>
 		<script charset="UTF-8" type="text/javascript" src="scripts/jquery/jquery-ui.custom.min.js"></script>
@@ -195,7 +198,12 @@ Copyright 2011 Newcastle University
 		</script>
 
 		<script type="text/html" id="template-part-numberentry">
-			<input type="text" class="numberentry" data-bind="value: studentAnswer, return: submit"/>
+			<input type="text" class="numberentry" data-bind="value: studentAnswer, valueUpdate: 'afterkeydown', return: submit"/>
+		</script>
+
+		<script type="text/html" id="template-part-jme">
+			<input type="text" spellcheck="false" class="jme" data-bind="value: studentAnswer, valueUpdate: 'afterkeydown', return: submit"/>
+			<span id="preview" class="mathPreview", data-bind="visible: previewTeX().length>0 && validEntry(), text: '$'+previewTeX()+'$', mathjax: previewTeX"></span>
 		</script>
 
 	</head>

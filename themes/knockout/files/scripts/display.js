@@ -433,6 +433,39 @@ display.PartDisplay.prototype =
 //JME display code
 display.JMEPartDisplay = function()
 {
+	var p = this.p;
+	var pd = this;
+
+	this.studentAnswer = ko.observable('');
+	this.validEntry = ko.observable(true);
+	this.previewTeX = ko.observable('');
+
+	ko.computed(function() {
+		var txt = pd.studentAnswer();
+		p.storeAnswer([txt]);
+		if(txt!=pd.oldtxt)
+		{
+			if(txt!=='')
+			{
+				try {
+					var tex = Numbas.jme.display.exprToLaTeX(txt,p.settings.displaySimplification,p.question.scope);
+					if(tex===undefined){throw(new Numbas.Error('display.part.jme.error making maths'))};
+					pd.previewTeX(tex);
+					pd.validEntry(true);
+				}
+				catch(e) {
+					pd.validEntry(false);
+					pd.warning(e);
+				}
+			}
+			else
+			{
+				pd.previewTeX('');
+				pd.validEntry(true);
+			}
+			pd.oldtxt = txt;
+		}
+	});
 }
 display.JMEPartDisplay.prototype =
 {
