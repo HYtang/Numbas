@@ -363,6 +363,9 @@ display.PartDisplay = function(p)
 	this.prompt = ko.observable(p.prompt);
 	this.type = ko.observable(p.type);
 
+	this.warnings = ko.observableArray([]);
+	this.warningsShown= ko.observable(false);
+
 	this.feedback = ko.observableArray([]);
 	this.feedbackShown = ko.observable(false);
 
@@ -381,11 +384,21 @@ display.PartDisplay.prototype =
 	//add a warning message
 	warning: function(warning)
 	{
+		this.warnings.push(warning);
 	},
 
 	//remove all previously displayed warnings
 	removeWarnings: function()
 	{
+		this.warnings([]);
+	},
+
+	showWarnings: function() {
+		this.warningsShown(true);
+	},
+
+	hideWarnings: function() {
+		this.warningsShown(false);
 	},
 
 	//toggle the feedback display
@@ -455,7 +468,7 @@ display.JMEPartDisplay = function()
 				}
 				catch(e) {
 					pd.validEntry(false);
-					pd.warning(e);
+					pd.warning(e.message);
 				}
 			}
 			else
@@ -499,6 +512,12 @@ display.JMEPartDisplay = extend(display.PartDisplay,display.JMEPartDisplay,true)
 //Pattern Match display code
 display.PatternMatchPartDisplay = function()
 {
+	var p = this.p;
+	var pd = this;
+	this.studentAnswer = ko.observable('');
+	ko.computed(function() {
+		p.storeAnswer([pd.studentAnswer()]);
+	});
 }
 display.PatternMatchPartDisplay.prototype = 
 {
