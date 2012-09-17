@@ -1211,8 +1211,16 @@ var funcObj = jme.funcObj = function(name,intype,outcons,fn,options)
 	this.evaluate = options.evaluate || function(args,scope)
 	{
 		var nargs = [];
-		for(var i=0; i<args.length; i++)
-			nargs.push(jme.evaluate(args[i],scope).value);
+		for(var i=0; i<args.length; i++) {
+			var result = jme.evaluate(args[i],scope);
+			if(options.unwrapLists && result.type=='list') {
+				var value = result.value.map(function(v){
+					return v.value;
+				});
+				nargs.push(value);
+			}else
+				nargs.push(result.value);
+		}
 
 		var result = this.fn.apply(null,nargs);
 
@@ -1668,6 +1676,12 @@ newBuiltin('listval',[TList,TNum],'?', null, {
 	{
 		var index = jme.evaluate(args[1],scope).value;
 		var list = jme.evaluate(args[0],scope);
+		if(list.type!='list') {
+			if(list.type=='name')
+				throw(new Numbas.Error('jme.variables.variable not defined',list.name));
+			else
+				throw(new Numbas.Error('jme.func.listval.not a list'));
+		}
 		if(index<0)
 			index += list.vars;
 		if(index in list.value)
