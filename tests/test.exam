@@ -1,0 +1,68 @@
+{
+	name: Numbas Test Exam
+	duration: 1800
+	
+	questions: [
+		{
+			name: Parts
+			statement: """
+				This question tests that all the part types are implemented.
+			"""
+			variables: {
+				a: random(1..9)
+				b: random(1..9)
+				c: random(1..9)
+				d: random(1..9)
+			}
+			
+			parts: [
+				{
+					type: numberentry
+					marks: 1
+					prompt: "<p>What is $\var{a}+\var{b}$?</p>"
+					answer: "{a+b}"
+				}, 
+				{
+					type: patternmatch
+					prompt: "<p>Write alternating capital and lowercase letters.</p>"
+					marks: 1
+					answer: "^[a-z]?([A-Z][a-z])*[A-Z]?$"
+					casesensitive: true
+				}
+				{
+					type: jme
+					marks: 1
+					prompt: """
+						<p>\[f(x) = x^2+\sin(x)\]</p>
+						<p>What is $f'(x)$?</p>
+					"""
+					answer: 2x+cos(x)
+				}
+				{
+					type: 1_n_2
+					prompt: "What's the first letter of 'bibendum'?"
+					choices: ['a','b','c']
+					matrix: [0,1,0]
+				}
+				{
+					type: m_n_2
+					prompt: "Tick all consonants."
+					choices: ['a','b','c']
+					matrix: [0,1,0]
+				}
+				{
+					type: m_n_x
+					prompt: ""
+					choices: ['1','4','6','9']
+					answers: ['even','odd']
+					matrix: [[0,1],[1,0],[1,0],[0,1]]
+				}
+			]
+			advice: "
+			<p>In part 1 simply add the two numbers, so that<br />\[\var{a}+\var{b} = \var{a+b}.\]</p>
+			
+			<p>In part 2 simply subtract the two numbers, so that<br />\[\var{c}-\var{d} = \var{c-d}.\]</p>
+			"
+		}
+	]
+}
