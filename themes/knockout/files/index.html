@@ -26,6 +26,9 @@ Copyright 2011 Newcastle University
 		<script charset="UTF-8" type="text/javascript" src="scripts/sarissa/sarissa.js"></script>
 		<script charset="UTF-8" type="text/javascript" src="scripts/sarissa/sarissa_ieemu_xpath.js"></script>
 
+		<!-- Math.seedrandom - seedable pseudorandom number generator -->
+		<script charset="UTF-8" type="text/javascript" src="scripts/seedrandom/seedrandom.js"></script>
+
 		<!-- R.js - localisation -->
 		<script charset="UTF-8" type="text/javascript" src="scripts/R/R.js"></script>
 		<script charset="UTF-8" type="text/javascript" src="scripts/R/en-gb.js"></script>
@@ -197,6 +200,10 @@ Copyright 2011 Newcastle University
 			<span class="feedback" data-bind="visible: answered, css: {cross: score()<=0, tick: score()==marks(), partial: score()<marks() && score()>0}"></span>
 		</script>
 
+		<script type="text/html" id="template-part-information">
+			TO DO
+		</script>
+
 		<script type="text/html" id="template-part-numberentry">
 			<input type="text" class="numberentry" data-bind="value: studentAnswer, valueUpdate: 'afterkeydown', return: submit"/>
 		</script>
@@ -208,6 +215,22 @@ Copyright 2011 Newcastle University
 		<script type="text/html" id="template-part-jme">
 			<input type="text" spellcheck="false" class="jme" data-bind="value: studentAnswer, valueUpdate: 'afterkeydown', return: submit"/>
 			<span id="preview" class="mathPreview", data-bind="visible: previewTeX().length>0 && validEntry(), text: '$'+previewTeX()+'$', mathjax: previewTeX"></span>
+		</script>
+
+		<script type="text/html" id="template-part-1_n_2">
+			TO DO
+		</script>
+
+		<script type="text/html" id="template-part-m_n_2">
+			TO DO
+		</script>
+
+		<script type="text/html" id="template-part-m_n_x">
+			TO DO
+		</script>
+
+		<script type="text/html" id="template-part-gapfill">
+			TO DO
 		</script>
 
 	</head>

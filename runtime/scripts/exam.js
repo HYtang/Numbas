@@ -77,11 +77,12 @@ var Exam = Numbas.Exam = function()
 			scopes.push(Numbas.extensions[extension].scope);
 		}
 	}
+	this.scope = new Numbas.jme.Scope(scopes);
 	scopes.push({
 		functions: Numbas.jme.variables.makeFunctions(this.xml,this.scope)
 	});
-
 	this.scope = new Numbas.jme.Scope(scopes);
+
 
 	//rulesets
 	var rulesetNodes = xml.selectNodes('settings/rulesets/set');
