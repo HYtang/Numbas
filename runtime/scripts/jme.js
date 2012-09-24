@@ -22,6 +22,9 @@ var math = Numbas.math;
 var vectormath = Numbas.vectormath;
 var matrixmath = Numbas.matrixmath;
 
+var re_whitespace = '[\\s \\f\\n\\r\\t\\v\\u00A0\\u2028\\u2029]';
+var re_strip_whitespace = new RegExp('^'+re_whitespace+'+|'+re_whitespace+'+$','g');
+
 var jme = Numbas.jme = {
 
 	constants: {
@@ -29,7 +32,7 @@ var jme = Numbas.jme = {
 		'pi': Math.PI,
 		'i': math.complex(0,1),
 		'infinity': Infinity,
-		'infty': Infinity,
+		'infty': Infinity
 	},
 
 	tokenise: function(expr)
@@ -42,7 +45,7 @@ var jme = Numbas.jme = {
 		
 		var oexpr = expr;
 
-		expr = expr.replace(/^\s+|\s+$/g, '');	//get rid of whitespace
+		expr = expr.replace(re_strip_whitespace, '');	//get rid of whitespace
 
 		var tokens = [];
 		var i = 0;
@@ -56,7 +59,7 @@ var jme = Numbas.jme = {
 		
 		while( expr.length )
 		{
-			expr = expr.replace(/^\s+|\s+$/g, '');	//get rid of whitespace
+			expr = expr.replace(re_strip_whitespace, '');	//get rid of whitespace
 		
 			var result;
 			var token;
@@ -772,7 +775,7 @@ var jme = Numbas.jme = {
 			}
 		}
 		return out;
-	},
+	}
 };
 
 //evaluation environment
@@ -1071,7 +1074,7 @@ var arity = jme.arity = {
 var prefixForm = {
 	'+': '+u',
 	'-': '-u',
-	'!': 'not',
+	'!': 'not'
 }
 var postfixForm = {
 	'!': 'fact'
@@ -1101,7 +1104,7 @@ var precedence = jme.precedence = {
 	'isa': 9,
 	'and': 11,
 	'or': 12,
-	'xor': 13,
+	'xor': 13
 };
 
 var synonyms = {

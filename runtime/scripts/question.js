@@ -643,7 +643,10 @@ Part.prototype = {
 		if(!loading)
 		{
 			this.display.showSteps();
-			this.question.updateScore();
+			if(this.answered)
+				this.submit();
+			else
+				this.question.updateScore();
 			Numbas.store.stepsShown(this);
 		}
 	},
