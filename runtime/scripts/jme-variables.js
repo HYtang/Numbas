@@ -230,7 +230,7 @@ jme.variables = {
 		xml=xml.selectSingleNode('content');
 		var element = $(xml).clone();
 		jme.variables.DOMcontentsubvars(element,scope);
-		return element;
+		return element.children();
 	},
 
 	DOMcontentsubvars: function(element, scope) {

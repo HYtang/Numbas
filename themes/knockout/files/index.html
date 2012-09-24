@@ -191,7 +191,6 @@ Copyright 2011 Newcastle University
 			</table>
 
 			<button id="exitBtn">Exit</button>
-			<button id="reviewBtn">Review</button>
 		</script>
 
 
@@ -218,11 +217,21 @@ Copyright 2011 Newcastle University
 		</script>
 
 		<script type="text/html" id="template-part-1_n_2">
-			TO DO
+			<ul class="multiplechoice" data-bind="foreach: answers">
+				<li class="choice" data-bind="css: {endrow: $index() % $parent.displayColumns() == 0}">
+				<input type="radio" data-bind="attr: {value: $index}, checked: $parent.studentAnswer"></div>
+					<span data-bind="append: $data"></span>
+				</li>
+			</ul>
 		</script>
 
 		<script type="text/html" id="template-part-m_n_2">
-			TO DO
+			<ul class="multiplechoice" data-bind="foreach: answers">
+				<li class="choice" data-bind="css: {endrow: $index() % $parent.displayColumns() == 0}">
+					<input type="checkbox" data-bind="checked: $parent.ticks[$index()]"></div>
+					<span data-bind="append: $data"></span>
+				</li>
+			</ul>
 		</script>
 
 		<script type="text/html" id="template-part-m_n_x">

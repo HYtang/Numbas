@@ -564,6 +564,53 @@ display.NumberEntryPartDisplay = extend(display.PartDisplay,display.NumberEntryP
 //Multiple Response display code
 display.MultipleResponsePartDisplay = function()
 {
+	var p = this.p;
+	var pd = this;
+
+	this.displayType = ko.observable(p.settings.displayType);
+	this.displayColumns = ko.observable(p.settings.displayColumns);
+	this.choiceWidth = ko.computed(function() {
+		var cols;
+		if((cols = pd.displayColumns())>0) {
+			return ((100/cols)-1)+'%';
+		}
+		else
+			return '';
+	});
+
+	this.choices = ko.observableArray(p.choices);
+	this.answers = ko.observableArray(p.answers);
+	switch(p.type) {
+	case '1_n_2':
+		this.studentAnswer = ko.observable();
+		ko.computed(function() {
+			var i = parseInt(pd.studentAnswer());
+			p.storeAnswer([i,0]);
+		});
+		break;
+	case 'm_n_2':
+		this.ticks = [];
+		for(var i=0;i<p.numAnswers;i++) {
+			this.ticks.push(ko.observable(false));
+		}
+		ko.computed(function() {
+			for(var i=0;i<pd.ticks.length;i++) {
+				p.storeAnswer([i,0,pd.ticks[i]()]);
+			}
+		});
+		break;
+	case 'm_n_x':
+		var rows = [];
+		for(var i=0;i<p.numAnswers;i++) {
+			var row = [];
+			for(var j=0;j<p.numChoices;j++) {
+				row.push(ko.observable(false));
+			}
+			rows.push(row);
+		}
+		this.ticks = rows;
+		break;
+	}
 }
 display.MultipleResponsePartDisplay.prototype =
 {

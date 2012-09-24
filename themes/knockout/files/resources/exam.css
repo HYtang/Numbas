@@ -402,6 +402,7 @@ button:hover, button:focus {
 
 .part {
 	margin: .5em 0;
+	padding-left: 2em;
 }
 
 div.part {
@@ -431,6 +432,14 @@ div.part {
 .multiplechoice p {
 	display:inline;
 }
+
+ul.multiplechoice .choice {
+	float: left;
+}
+ul.multiplechoice .choice.endrow {
+	clear: left;
+}
+
 .question {
 	margin-left: 15em;
 }
@@ -488,6 +497,7 @@ div.part {
 	font-size: 1.3em;
 	float: left;
 	width: 1.5em;
+	margin-left: -1em;
 }
 
 .part #partFeedback {

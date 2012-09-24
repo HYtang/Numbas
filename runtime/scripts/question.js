@@ -1157,7 +1157,7 @@ function MultipleResponsePart(xml, path, question, parentPart, loading)
 	if(!choicesNode)
 		throw(new Numbas.Error('part.mcq.choices missing',this.path));
 
-	tryGetAttribute(settings,choicesNode,['minimumexpected','maximumexpected','order','displayType'],['minAnswers','maxAnswers','choiceOrder']);
+	tryGetAttribute(settings,choicesNode,['minimumexpected','maximumexpected','order','displayType','displayColumns'],['minAnswers','maxAnswers','choiceOrder']);
 
 	var minAnswers = jme.subvars(settings.minAnswers, question.scope);
 	minAnswers = jme.evaluate(settings.minAnswers,this.question.scope);
@@ -1199,6 +1199,7 @@ function MultipleResponsePart(xml, path, question, parentPart, loading)
 		settings.warningMessage = $.xsl.transform(Numbas.xml.templates.question,warningNode).string;
 	}
 	
+	//work out ordering of choices and answers
 	if(loading)
 	{
 		var pobj = Numbas.store.loadMultipleResponsePart(this);
@@ -1230,6 +1231,9 @@ function MultipleResponsePart(xml, path, question, parentPart, loading)
 		}
 	}
 
+	this.choices = [];
+	this.answers = [];
+	
 	for(var i=0;i<this.numChoices;i++)
 	{
 		choicesNode.removeChild(choiceNodes[i]);
@@ -1237,6 +1241,8 @@ function MultipleResponsePart(xml, path, question, parentPart, loading)
 	for(i=0;i<this.numChoices;i++)
 	{
 		choicesNode.appendChild(choiceNodes[this.shuffleChoices[i]]);
+		this.choices[i] = jme.variables.subcontent(choiceNodes[this.shuffleChoices[i]],'',this.question.scope);
+
 	}
 	if(this.type == 'm_n_x')
 	{
@@ -1247,6 +1253,7 @@ function MultipleResponsePart(xml, path, question, parentPart, loading)
 		for(i=0;i<this.numAnswers;i++)
 		{
 			answersNode.appendChild(answerNodes[this.shuffleAnswers[i]]);
+			this.answers[i] = jme.variables.subcontent(answerNodes[this.shuffleChoices[i]],'',this.question.scope);
 		}
 	}
 
@@ -1329,7 +1336,7 @@ function MultipleResponsePart(xml, path, question, parentPart, loading)
 	{
 		var cell = {message: ""};
 		tryGetAttribute(cell, distractorNodes[i], ['answerIndex', 'choiceIndex']);
-		cell.message= $.xsl.transform(Numbas.xml.templates.question,distractorNodes[i]).string;
+		cell.message= jme.variables.subcontent(distractorNodes[i],'',this.question.scope);
 
 		//take into account shuffling
 		cell.answerIndex = this.shuffleAnswers[cell.answerIndex];
@@ -1407,6 +1414,11 @@ function MultipleResponsePart(xml, path, question, parentPart, loading)
 	{	//because we swapped answers and choices round in the marking matrix
 		this.numAnswers = this.numChoices;
 		this.numChoices = 1;
+
+		var c = this.choices;
+		this.choices = this.answers;
+		this.answers = c;
+
 		var flipped=true;
 	}
 	else

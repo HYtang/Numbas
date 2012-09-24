@@ -1,6 +1,10 @@
 {
 	name: Numbas Test Exam
 	duration: 1800
+
+	navigation: {
+		showfrontpage: false
+	}
 	
 	questions: [
 		{
@@ -43,12 +47,15 @@
 					prompt: "What's the first letter of 'bibendum'?"
 					choices: ['a','b','c']
 					matrix: [0,1,0]
+					distractors: ['not A','B!','not C']
+					displaycolumns: 0
 				}
 				{
 					type: m_n_2
 					prompt: "Tick all consonants."
-					choices: ['a','b','c']
-					matrix: [0,1,0]
+					choices: [a,b,c,d,e,f,g,h,i,j]
+					matrix: [0,1,1,1,0,1,1,1,0,1]
+					displaycolumns:2
 				}
 				{
 					type: m_n_x
