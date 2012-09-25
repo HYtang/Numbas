@@ -28,6 +28,8 @@ from zipfile import ZipFile
 import xml.etree.ElementTree as etree
 from itertools import count
 
+sys.stdin = sys.stdin.detach()
+
 namespaces = {
 	'': 'http://www.imsglobal.org/xsd/imscp_v1p1',
 	'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
@@ -297,7 +299,7 @@ if __name__ == '__main__':
 	(options,args) = parser.parse_args()
 
 	if options.pipein:
-		options.source = sys.stdin.read()
+		options.source = sys.stdin.read().decode('utf-8')
 		options.sourcedir = os.getcwd()
 		if not options.output:
 			options.output = os.path.join(path,'output','exam')

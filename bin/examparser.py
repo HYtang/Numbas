@@ -11,6 +11,8 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+from __future__ import unicode_literals
+
 import sys
 import re
 try:
@@ -19,7 +21,7 @@ try:
 except ImportError:
   # For Python < 2.6 (after installing ordereddict)
   from ordereddict import OrderedDict
-
+ 
 try:
 	basestring
 	strcons = unicode
@@ -31,6 +33,7 @@ class ParseError(Exception):
 	def __init__(self,parser,message,hint=''):
 		self.expression = parser.source[parser.cursor:parser.cursor+50]
 		self.line = parser.source[:parser.cursor].count('\n')+1
+		self.cursor = parser.cursor
 		self.message = message
 		self.hint = hint
 	
@@ -59,6 +62,8 @@ class ExamParser:
 
 		self.source = source
 		self.cursor = 0
+
+
 		self.data = self.getthing()
 		if self.source[self.cursor:].strip()!='':
 			raise ParseError(self,"Didn't parse all input","check for unmatched brackets")
